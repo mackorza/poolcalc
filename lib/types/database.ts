@@ -19,6 +19,7 @@ export interface Database {
           num_tables: number
           num_rounds: number
           status: 'setup' | 'in_progress' | 'completed'
+          tournament_format: 'round_robin' | 'pool_playoff'
           created_at: string
           updated_at: string
         }
@@ -31,6 +32,7 @@ export interface Database {
           num_tables: number
           num_rounds: number
           status?: 'setup' | 'in_progress' | 'completed'
+          tournament_format?: 'round_robin' | 'pool_playoff'
           created_at?: string
           updated_at?: string
         }
@@ -43,6 +45,7 @@ export interface Database {
           num_tables?: number
           num_rounds?: number
           status?: 'setup' | 'in_progress' | 'completed'
+          tournament_format?: 'round_robin' | 'pool_playoff'
           created_at?: string
           updated_at?: string
         }
@@ -56,6 +59,7 @@ export interface Database {
           points: number
           wins: number
           losses: number
+          pool_group: string | null
           created_at: string
         }
         Insert: {
@@ -66,6 +70,7 @@ export interface Database {
           points?: number
           wins?: number
           losses?: number
+          pool_group?: string | null
           created_at?: string
         }
         Update: {
@@ -76,6 +81,7 @@ export interface Database {
           points?: number
           wins?: number
           losses?: number
+          pool_group?: string | null
           created_at?: string
         }
       }
@@ -89,6 +95,8 @@ export interface Database {
           team2_id: string
           winner_id: string | null
           completed_at: string | null
+          stage: 'pool' | 'quarterfinal' | 'semifinal' | 'final' | 'third_place'
+          bracket_position: number | null
           created_at: string
         }
         Insert: {
@@ -100,6 +108,8 @@ export interface Database {
           team2_id: string
           winner_id?: string | null
           completed_at?: string | null
+          stage?: 'pool' | 'quarterfinal' | 'semifinal' | 'final' | 'third_place'
+          bracket_position?: number | null
           created_at?: string
         }
         Update: {
@@ -111,6 +121,8 @@ export interface Database {
           team2_id?: string
           winner_id?: string | null
           completed_at?: string | null
+          stage?: 'pool' | 'quarterfinal' | 'semifinal' | 'final' | 'third_place'
+          bracket_position?: number | null
           created_at?: string
         }
       }
