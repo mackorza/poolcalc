@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createTournament } from '@/app/actions/tournament'
 import { getRecommendedRounds } from '@/lib/tournament/utils'
+import { determinePlayoffFormat } from '@/lib/tournament/playoff-utils'
 
 export default function AdminPage() {
   const router = useRouter()
@@ -18,14 +19,24 @@ export default function AdminPage() {
   const [numRounds, setNumRounds] = useState(5)
   const [playerInput, setPlayerInput] = useState('')
   const [players, setPlayers] = useState<string[]>([])
+  const [tournamentFormat, setTournamentFormat] = useState<'round_robin' | 'pool_playoff'>('round_robin')
 
-  // Calculate recommended rounds based on players and tables
+  // Calculate recommended rounds based on players and tables (for round-robin)
   const recommendation = useMemo(() => {
-    if (players.length >= 2 && players.length % 2 === 0) {
+    if (tournamentFormat === 'round_robin' && players.length >= 2 && players.length % 2 === 0) {
       return getRecommendedRounds(players.length, numTables)
     }
     return null
-  }, [players.length, numTables])
+  }, [players.length, numTables, tournamentFormat])
+
+  // Get playoff format info (for pool+playoff)
+  const playoffInfo = useMemo(() => {
+    if (tournamentFormat === 'pool_playoff' && players.length >= 2 && players.length % 2 === 0) {
+      const numTeams = players.length / 2
+      return determinePlayoffFormat(numTeams)
+    }
+    return null
+  }, [players.length, tournamentFormat])
 
   const handleAddPlayer = () => {
     if (playerInput.trim()) {
@@ -52,6 +63,7 @@ export default function AdminPage() {
         numTables,
         numRounds,
         playerNames: players,
+        tournamentFormat,
       })
 
       if (result.error) {
@@ -138,6 +150,76 @@ export default function AdminPage() {
             <div className="space-y-4">
               <h2 className="text-xl font-semibold text-gray-800">Tournament Settings</h2>
 
+              {/* Format Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Tournament Format *
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setTournamentFormat('round_robin')}
+                    className={`p-4 rounded-lg border-2 transition-all text-left ${
+                      tournamentFormat === 'round_robin'
+                        ? 'border-blue-600 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        tournamentFormat === 'round_robin' ? 'border-blue-600' : 'border-gray-300'
+                      }`}>
+                        {tournamentFormat === 'round_robin' && (
+                          <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                        )}
+                      </div>
+                      <span className="font-semibold text-gray-900">Round-Robin</span>
+                    </div>
+                    <p className="text-xs text-gray-600 ml-6">
+                      Every team plays every other team
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setTournamentFormat('pool_playoff')}
+                    className={`p-4 rounded-lg border-2 transition-all text-left ${
+                      tournamentFormat === 'pool_playoff'
+                        ? 'border-blue-600 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                        tournamentFormat === 'pool_playoff' ? 'border-blue-600' : 'border-gray-300'
+                      }`}>
+                        {tournamentFormat === 'pool_playoff' && (
+                          <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                        )}
+                      </div>
+                      <span className="font-semibold text-gray-900">Pool + Playoffs</span>
+                    </div>
+                    <p className="text-xs text-gray-600 ml-6">
+                      Pool stage → Knockout playoffs
+                    </p>
+                  </button>
+                </div>
+
+                {/* Format-specific info */}
+                {playoffInfo && tournamentFormat === 'pool_playoff' && (
+                  <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-sm text-blue-900 font-medium mb-1">
+                      Pool + Playoff Format
+                    </p>
+                    <ul className="text-xs text-blue-800 space-y-1">
+                      <li>• {playoffInfo.numPools} pools of {playoffInfo.teamsPerPool} teams</li>
+                      <li>• Top {playoffInfo.teamsQualify} from each pool advance</li>
+                      <li>• Knockout: {playoffInfo.playoffStages.join(' → ')}</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -153,33 +235,50 @@ export default function AdminPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Number of Rounds *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="1"
-                    value={numRounds}
-                    onChange={(e) => setNumRounds(parseInt(e.target.value))}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                  />
-                  {recommendation && (
-                    <div className="mt-2">
-                      <button
-                        type="button"
-                        onClick={() => setNumRounds(recommendation.recommended)}
-                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                      >
-                        💡 Use recommended: {recommendation.recommended} rounds
-                      </button>
+                {tournamentFormat === 'round_robin' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Number of Rounds *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      value={numRounds}
+                      onChange={(e) => setNumRounds(parseInt(e.target.value))}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    />
+                    {recommendation && (
+                      <div className="mt-2">
+                        <button
+                          type="button"
+                          onClick={() => setNumRounds(recommendation.recommended)}
+                          className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                          💡 Use recommended: {recommendation.recommended} rounds
+                        </button>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {recommendation.explanation}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {tournamentFormat === 'pool_playoff' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Pool Stage Rounds
+                    </label>
+                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <p className="text-sm text-gray-700">
+                        Auto-calculated based on pool size
+                      </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        {recommendation.explanation}
+                        Each team plays all others in their pool
                       </p>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
 
