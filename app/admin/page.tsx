@@ -208,7 +208,7 @@ export default function AdminPage() {
                         key={index}
                         className="flex items-center gap-2 bg-white px-3 py-1 rounded-full border border-gray-200"
                       >
-                        <span className="text-sm">{player}</span>
+                        <span className="text-sm text-gray-900">{player}</span>
                         <button
                           type="button"
                           onClick={() => handleRemovePlayer(index)}
