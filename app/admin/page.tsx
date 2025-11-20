@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createTournament } from '@/app/actions/tournament'
+import { getRecommendedRounds } from '@/lib/tournament/utils'
 
 export default function AdminPage() {
   const router = useRouter()
@@ -17,6 +18,14 @@ export default function AdminPage() {
   const [numRounds, setNumRounds] = useState(5)
   const [playerInput, setPlayerInput] = useState('')
   const [players, setPlayers] = useState<string[]>([])
+
+  // Calculate recommended rounds based on players and tables
+  const recommendation = useMemo(() => {
+    if (players.length >= 2 && players.length % 2 === 0) {
+      return getRecommendedRounds(players.length, numTables)
+    }
+    return null
+  }, [players.length, numTables])
 
   const handleAddPlayer = () => {
     if (playerInput.trim()) {
@@ -156,6 +165,20 @@ export default function AdminPage() {
                     onChange={(e) => setNumRounds(parseInt(e.target.value))}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                   />
+                  {recommendation && (
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        onClick={() => setNumRounds(recommendation.recommended)}
+                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        💡 Use recommended: {recommendation.recommended} rounds
+                      </button>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {recommendation.explanation}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

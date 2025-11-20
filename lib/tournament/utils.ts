@@ -105,3 +105,46 @@ export function calculateTotalMatches(numTeams: number): number {
 export function calculateTotalRounds(numTeams: number): number {
   return numTeams % 2 === 0 ? numTeams - 1 : numTeams;
 }
+
+/**
+ * Get recommended number of rounds based on players and tables
+ * Returns recommendation for getting a clear winner
+ */
+export function getRecommendedRounds(numPlayers: number, numTables: number): {
+  recommended: number
+  min: number
+  max: number
+  explanation: string
+} {
+  const numTeams = Math.floor(numPlayers / 2)
+  const fullRoundRobin = calculateTotalRounds(numTeams)
+  const totalMatches = calculateTotalMatches(numTeams)
+
+  // Calculate how many matches can be played per round with available tables
+  const matchesPerRound = Math.min(Math.floor(numTeams / 2), numTables)
+
+  // For a clear winner, we want every team to play every other team
+  // This is a full round-robin tournament
+  const recommended = fullRoundRobin
+
+  // Minimum: At least half of full round-robin to get meaningful results
+  const min = Math.max(3, Math.ceil(fullRoundRobin / 2))
+
+  // Maximum: Full round-robin
+  const max = fullRoundRobin
+
+  let explanation = `Full round-robin: ${fullRoundRobin} rounds (${totalMatches} total matches). `
+  explanation += `Each team plays every other team once, ensuring a fair winner. `
+
+  if (matchesPerRound < Math.floor(numTeams / 2)) {
+    const roundsNeeded = Math.ceil(totalMatches / matchesPerRound)
+    explanation += `With ${numTables} table${numTables > 1 ? 's' : ''}, this will take approximately ${roundsNeeded} rounds to complete all matches.`
+  }
+
+  return {
+    recommended,
+    min,
+    max,
+    explanation
+  }
+}
