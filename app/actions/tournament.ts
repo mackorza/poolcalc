@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createRandomizedTeams, generateRoundRobinSchedule } from '@/lib/tournament/utils'
+import { createPoolGroups, determinePlayoffFormat, generatePlayoffBracket } from '@/lib/tournament/playoff-utils'
 import { revalidatePath } from 'next/cache'
 
 export interface CreateTournamentData {
@@ -12,6 +13,7 @@ export interface CreateTournamentData {
   numTables: number
   numRounds: number
   playerNames: string[]
+  tournamentFormat: 'round_robin' | 'pool_playoff'
 }
 
 export async function createTournament(data: CreateTournamentData) {
@@ -38,6 +40,7 @@ export async function createTournament(data: CreateTournamentData) {
         num_tables: data.numTables,
         num_rounds: data.numRounds,
         status: 'setup',
+        tournament_format: data.tournamentFormat,
       })
       .select()
       .single()
@@ -49,46 +52,129 @@ export async function createTournament(data: CreateTournamentData) {
 
     // Create randomized teams
     const teamPairs = createRandomizedTeams(data.playerNames)
-    const { data: teams, error: teamsError } = await supabase
-      .from('teams')
-      .insert(
-        teamPairs.map((pair) => ({
+    const numTeams = teamPairs.length
+
+    // Handle Pool + Playoff format
+    if (data.tournamentFormat === 'pool_playoff') {
+      const playoffFormat = determinePlayoffFormat(numTeams)
+
+      // Create pools
+      const poolIndices = Array.from({ length: numTeams }, (_, i) => i)
+      const pools = createPoolGroups(poolIndices.map(String), playoffFormat.numPools)
+
+      // Insert teams with pool groups
+      const teamsToInsert = teamPairs.map((pair, index) => {
+        const poolIndex = Math.floor(index / playoffFormat.teamsPerPool)
+        return {
           tournament_id: tournament.id,
           player1_name: pair.player1,
           player2_name: pair.player2,
-        }))
-      )
-      .select()
+          pool_group: pools[poolIndex]?.name || null,
+        }
+      })
 
-    if (teamsError || !teams) {
-      console.error('Teams creation error:', teamsError)
-      return { error: 'Failed to create teams' }
-    }
+      const { data: teams, error: teamsError } = await supabase
+        .from('teams')
+        .insert(teamsToInsert)
+        .select()
 
-    // Generate round-robin schedule
-    const teamIds = teams.map((team) => team.id)
-    const schedule = generateRoundRobinSchedule(teamIds, data.numTables)
+      if (teamsError || !teams) {
+        console.error('Teams creation error:', teamsError)
+        return { error: 'Failed to create teams' }
+      }
 
-    // Create matches for specified number of rounds
-    const matchesToCreate = []
-    for (let roundIndex = 0; roundIndex < Math.min(data.numRounds, schedule.length); roundIndex++) {
-      const round = schedule[roundIndex]
-      for (const match of round) {
+      // Generate pool stage matches
+      const matchesToCreate = []
+
+      for (const pool of pools) {
+        const poolTeamIds = teams
+          .filter(t => t.pool_group === pool.name)
+          .map(t => t.id)
+
+        if (poolTeamIds.length > 1) {
+          const poolSchedule = generateRoundRobinSchedule(poolTeamIds, data.numTables)
+
+          for (let roundIndex = 0; roundIndex < poolSchedule.length; roundIndex++) {
+            for (const match of poolSchedule[roundIndex]) {
+              matchesToCreate.push({
+                tournament_id: tournament.id,
+                round_number: roundIndex + 1,
+                table_number: match.tableNumber,
+                team1_id: match.team1Id,
+                team2_id: match.team2Id,
+                stage: 'pool' as const,
+                bracket_position: null,
+              })
+            }
+          }
+        }
+      }
+
+      // Create placeholder playoff matches (will be filled when pool stage completes)
+      const playoffBracket = generatePlayoffBracket(playoffFormat.playoffStages)
+      for (const playoffMatch of playoffBracket) {
         matchesToCreate.push({
           tournament_id: tournament.id,
-          round_number: roundIndex + 1,
-          table_number: match.tableNumber,
-          team1_id: match.team1Id,
-          team2_id: match.team2Id,
+          round_number: 999, // Placeholder
+          table_number: 1,
+          team1_id: teams[0].id, // Placeholder
+          team2_id: teams[1].id, // Placeholder
+          stage: playoffMatch.stage,
+          bracket_position: playoffMatch.bracketPosition,
         })
       }
-    }
 
-    const { error: matchesError } = await supabase.from('matches').insert(matchesToCreate)
+      const { error: matchesError } = await supabase.from('matches').insert(matchesToCreate)
 
-    if (matchesError) {
-      console.error('Matches creation error:', matchesError)
-      return { error: 'Failed to create matches' }
+      if (matchesError) {
+        console.error('Matches creation error:', matchesError)
+        return { error: 'Failed to create matches' }
+      }
+
+    } else {
+      // Original round-robin format
+      const { data: teams, error: teamsError } = await supabase
+        .from('teams')
+        .insert(
+          teamPairs.map((pair) => ({
+            tournament_id: tournament.id,
+            player1_name: pair.player1,
+            player2_name: pair.player2,
+            pool_group: null,
+          }))
+        )
+        .select()
+
+      if (teamsError || !teams) {
+        console.error('Teams creation error:', teamsError)
+        return { error: 'Failed to create teams' }
+      }
+
+      const teamIds = teams.map((team) => team.id)
+      const schedule = generateRoundRobinSchedule(teamIds, data.numTables)
+
+      const matchesToCreate = []
+      for (let roundIndex = 0; roundIndex < Math.min(data.numRounds, schedule.length); roundIndex++) {
+        const round = schedule[roundIndex]
+        for (const match of round) {
+          matchesToCreate.push({
+            tournament_id: tournament.id,
+            round_number: roundIndex + 1,
+            table_number: match.tableNumber,
+            team1_id: match.team1Id,
+            team2_id: match.team2Id,
+            stage: 'pool' as const,
+            bracket_position: null,
+          })
+        }
+      }
+
+      const { error: matchesError } = await supabase.from('matches').insert(matchesToCreate)
+
+      if (matchesError) {
+        console.error('Matches creation error:', matchesError)
+        return { error: 'Failed to create matches' }
+      }
     }
 
     revalidatePath('/admin')
