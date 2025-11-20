@@ -7,6 +7,7 @@ import Leaderboard from './Leaderboard'
 import MatchSchedule from './MatchSchedule'
 import AdminPanel from './AdminPanel'
 import PoolStageView from './PoolStageView'
+import PlayoffBracketView from './PlayoffBracketView'
 
 type Tournament = Database['public']['Tables']['tournaments']['Row']
 type Team = Database['public']['Tables']['teams']['Row']
@@ -282,11 +283,7 @@ export default function TournamentView({ tournament: initialTournament, teams: i
         )}
 
         {isPoolPlayoff && activeTab === 'playoffs' && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Playoff Bracket</h2>
-            <p className="text-gray-600">Playoff bracket view coming soon...</p>
-            {/* TODO: Add PlayoffBracketView component */}
-          </div>
+          <PlayoffBracketView matches={playoffMatches} teams={teams} />
         )}
 
         {/* Admin Panel */}
