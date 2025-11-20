@@ -26,6 +26,11 @@ export default function TournamentView({ tournament: initialTournament, teams: i
   const [teams, setTeams] = useState(initialTeams)
   const [matches, setMatches] = useState(initialMatches)
   const [showAdmin, setShowAdmin] = useState(false)
+  const [activeTab, setActiveTab] = useState<'leaderboard' | 'pool' | 'playoffs'>('leaderboard')
+
+  const isPoolPlayoff = tournament.tournament_format === 'pool_playoff'
+  const poolMatches = matches.filter(m => m.stage === 'pool')
+  const playoffMatches = matches.filter(m => m.stage !== 'pool')
 
   useEffect(() => {
     const supabase = createClient()
@@ -170,12 +175,17 @@ export default function TournamentView({ tournament: initialTournament, teams: i
                   </span>
                 )}
               </div>
-              <div className="mt-2 flex gap-2">
+              <div className="mt-2 flex gap-2 flex-wrap">
                 <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
                   {tournament.num_tables} {tournament.num_tables === 1 ? 'Table' : 'Tables'}
                 </span>
-                <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
-                  {tournament.num_rounds} {tournament.num_rounds === 1 ? 'Round' : 'Rounds'}
+                {!isPoolPlayoff && (
+                  <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                    {tournament.num_rounds} {tournament.num_rounds === 1 ? 'Round' : 'Rounds'}
+                  </span>
+                )}
+                <span className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-medium">
+                  {isPoolPlayoff ? 'Pool + Playoffs' : 'Round-Robin'}
                 </span>
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                   tournament.status === 'completed'
@@ -200,20 +210,87 @@ export default function TournamentView({ tournament: initialTournament, teams: i
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Leaderboard */}
-          <div className="lg:col-span-1">
-            <Leaderboard teams={teams} />
+        {/* Tab Navigation - only for Pool+Playoff format */}
+        {isPoolPlayoff && (
+          <div className="mb-6 bg-white rounded-lg shadow p-1 flex gap-1">
+            <button
+              onClick={() => setActiveTab('leaderboard')}
+              className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
+                activeTab === 'leaderboard'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              Leaderboard
+            </button>
+            <button
+              onClick={() => setActiveTab('pool')}
+              className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
+                activeTab === 'pool'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              Pool Stage
+            </button>
+            <button
+              onClick={() => setActiveTab('playoffs')}
+              className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
+                activeTab === 'playoffs'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              Playoffs
+            </button>
           </div>
+        )}
 
-          {/* Match Schedule */}
-          <div className="lg:col-span-2">
-            <MatchSchedule
-              matches={matches}
-              numRounds={tournament.num_rounds}
-            />
+        {/* Round-Robin View */}
+        {!isPoolPlayoff && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-1">
+              <Leaderboard teams={teams} />
+            </div>
+            <div className="lg:col-span-2">
+              <MatchSchedule
+                matches={matches}
+                numRounds={tournament.num_rounds}
+              />
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Pool+Playoff Views */}
+        {isPoolPlayoff && activeTab === 'leaderboard' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-1">
+              <Leaderboard teams={teams} />
+            </div>
+            <div className="lg:col-span-2">
+              <MatchSchedule
+                matches={poolMatches}
+                numRounds={tournament.num_rounds}
+              />
+            </div>
+          </div>
+        )}
+
+        {isPoolPlayoff && activeTab === 'pool' && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Pool Stage</h2>
+            <p className="text-gray-600">Pool stage view coming soon...</p>
+            {/* TODO: Add PoolStageView component */}
+          </div>
+        )}
+
+        {isPoolPlayoff && activeTab === 'playoffs' && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Playoff Bracket</h2>
+            <p className="text-gray-600">Playoff bracket view coming soon...</p>
+            {/* TODO: Add PlayoffBracketView component */}
+          </div>
+        )}
 
         {/* Admin Panel */}
         {showAdmin && (
