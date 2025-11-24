@@ -117,6 +117,8 @@ export default function TournamentView({ tournament: initialTournament, teams: i
               team2_id: match.team2_id,
               winner_id: match.winner_id,
               completed_at: match.completed_at,
+              stage: match.stage,
+              bracket_position: match.bracket_position,
               created_at: match.created_at,
               team1: match.team1,
               team2: match.team2,
