@@ -22,81 +22,77 @@ export default function MatchSchedule({ matches, numRounds }: MatchScheduleProps
   }))
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">📋 Match Schedule</h2>
+    <div className="space-y-3">
+      <div className="bg-white rounded-lg shadow-lg p-4">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">📋 Match Schedule</h2>
 
-        <div className="space-y-6">
+        <div className="space-y-3">
           {matchesByRound.map(({ round, matches: roundMatches }) => (
             <div key={round}>
-              <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+              <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs">
                   Round {round}
                 </span>
-                <span className="text-sm text-gray-600">
-                  ({roundMatches.filter((m) => m.completed_at).length}/{roundMatches.length} completed)
+                <span className="text-xs text-gray-600">
+                  ({roundMatches.filter((m) => m.completed_at).length}/{roundMatches.length} done)
                 </span>
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                 {roundMatches.map((match) => (
                   <div
                     key={match.id}
-                    className={`border-2 rounded-lg p-4 transition-all ${
+                    className={`border rounded-lg p-2 transition-all ${
                       match.completed_at
                         ? 'border-green-200 bg-green-50'
-                        : 'border-gray-200 bg-white hover:border-blue-300'
+                        : 'border-gray-200 bg-white'
                     }`}
                   >
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-xs font-semibold text-gray-600 uppercase">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs font-medium text-gray-500">
                         Table {match.table_number}
                       </span>
                       {match.completed_at && (
-                        <span className="text-xs font-semibold text-green-600 uppercase">
-                          ✓ Complete
-                        </span>
+                        <span className="text-xs text-green-600">✓</span>
                       )}
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       {/* Team 1 */}
                       <div
-                        className={`p-3 rounded ${
+                        className={`px-2 py-1 rounded text-sm ${
                           match.winner_id === match.team1_id
-                            ? 'bg-green-100 border-2 border-green-500'
+                            ? 'bg-green-100 border border-green-400'
                             : 'bg-gray-50'
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <div className="font-medium text-gray-900">
+                          <span className="text-gray-900 truncate">
                             {match.team1.player1_name} & {match.team1.player2_name}
-                          </div>
+                          </span>
                           {match.winner_id === match.team1_id && (
-                            <span className="text-green-600 font-bold text-lg">W</span>
+                            <span className="text-green-600 font-bold text-xs ml-1">W</span>
                           )}
                         </div>
                       </div>
 
                       {/* VS */}
-                      <div className="text-center text-xs font-semibold text-gray-400">
-                        VS
-                      </div>
+                      <div className="text-center text-xs text-gray-400">vs</div>
 
                       {/* Team 2 */}
                       <div
-                        className={`p-3 rounded ${
+                        className={`px-2 py-1 rounded text-sm ${
                           match.winner_id === match.team2_id
-                            ? 'bg-green-100 border-2 border-green-500'
+                            ? 'bg-green-100 border border-green-400'
                             : 'bg-gray-50'
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <div className="font-medium text-gray-900">
+                          <span className="text-gray-900 truncate">
                             {match.team2.player1_name} & {match.team2.player2_name}
-                          </div>
+                          </span>
                           {match.winner_id === match.team2_id && (
-                            <span className="text-green-600 font-bold text-lg">W</span>
+                            <span className="text-green-600 font-bold text-xs ml-1">W</span>
                           )}
                         </div>
                       </div>
