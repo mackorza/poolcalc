@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/lib/types/database'
 import Leaderboard from './Leaderboard'
 import MatchSchedule from './MatchSchedule'
 import PoolStageView from './PoolStageView'
 import PlayoffBracketView from './PlayoffBracketView'
+import confetti from 'canvas-confetti'
 
 type Tournament = Database['public']['Tables']['tournaments']['Row']
 type Team = Database['public']['Tables']['teams']['Row']
@@ -27,10 +28,78 @@ export default function TournamentView({ tournament: initialTournament, teams: i
   const [teams, setTeams] = useState(initialTeams)
   const [matches, setMatches] = useState(initialMatches)
   const [activeTab, setActiveTab] = useState<'leaderboard' | 'pool' | 'playoffs'>('leaderboard')
+  const [showWinnerBanner, setShowWinnerBanner] = useState(false)
+  const confettiTriggered = useRef(false)
 
   const isPoolPlayoff = tournament.tournament_format === 'pool_playoff'
   const poolMatches = matches.filter(m => m.stage === 'pool')
   const playoffMatches = matches.filter(m => m.stage !== 'pool')
+
+  // Check for a clear winner
+  const checkForWinner = useCallback(() => {
+    if (teams.length < 2 || matches.length === 0) return null
+
+    const allMatchesCompleted = matches.every(m => m.completed_at)
+    if (!allMatchesCompleted) return null
+
+    // Check if there's a tiebreaker match that's completed
+    const tiebreakerMatch = matches.find(m => m.stage === 'tiebreaker' && m.completed_at)
+    if (tiebreakerMatch && tiebreakerMatch.winner_id) {
+      return teams.find(t => t.id === tiebreakerMatch.winner_id) || null
+    }
+
+    // Check if there's a clear winner (no tie at top)
+    const sortedTeams = [...teams].sort((a, b) => b.points - a.points)
+    if (sortedTeams[0].points > sortedTeams[1].points) {
+      return sortedTeams[0]
+    }
+
+    return null
+  }, [teams, matches])
+
+  const winner = checkForWinner()
+
+  // Trigger confetti when winner is determined
+  useEffect(() => {
+    if (winner && !confettiTriggered.current) {
+      confettiTriggered.current = true
+      setShowWinnerBanner(true)
+
+      // Fire confetti multiple times for a shower effect
+      const duration = 3000
+      const end = Date.now() + duration
+
+      const frame = () => {
+        confetti({
+          particleCount: 3,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: ['#FFD700', '#FFA500', '#FF6347', '#00CED1', '#9370DB']
+        })
+        confetti({
+          particleCount: 3,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: ['#FFD700', '#FFA500', '#FF6347', '#00CED1', '#9370DB']
+        })
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame)
+        }
+      }
+      frame()
+
+      // Big burst in the center
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#FFD700', '#FFA500', '#FF6347', '#00CED1', '#9370DB']
+      })
+    }
+  }, [winner])
 
   // Function to refetch all data
   const refetchData = useCallback(async () => {
@@ -170,6 +239,20 @@ export default function TournamentView({ tournament: initialTournament, teams: i
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+      {/* Winner Banner */}
+      {showWinnerBanner && winner && (
+        <div className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-400 py-4 px-4 text-center animate-pulse">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-3xl font-bold text-gray-900">
+              🏆 CHAMPIONS 🏆
+            </div>
+            <div className="text-2xl font-bold text-gray-800 mt-1">
+              {winner.player1_name} & {winner.player2_name}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-6">
@@ -260,31 +343,23 @@ export default function TournamentView({ tournament: initialTournament, teams: i
 
         {/* Round-Robin View */}
         {!isPoolPlayoff && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-1">
-              <Leaderboard teams={teams} />
-            </div>
-            <div className="lg:col-span-2">
-              <MatchSchedule
-                matches={matches}
-                numRounds={tournament.num_rounds}
-              />
-            </div>
+          <div className="space-y-6">
+            <Leaderboard teams={teams} />
+            <MatchSchedule
+              matches={matches}
+              numRounds={tournament.num_rounds}
+            />
           </div>
         )}
 
         {/* Pool+Playoff Views */}
         {isPoolPlayoff && activeTab === 'leaderboard' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-1">
-              <Leaderboard teams={teams} />
-            </div>
-            <div className="lg:col-span-2">
-              <MatchSchedule
-                matches={poolMatches}
-                numRounds={tournament.num_rounds}
-              />
-            </div>
+          <div className="space-y-6">
+            <Leaderboard teams={teams} />
+            <MatchSchedule
+              matches={poolMatches}
+              numRounds={tournament.num_rounds}
+            />
           </div>
         )}
 

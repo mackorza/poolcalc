@@ -38,7 +38,7 @@ export default function MatchSchedule({ matches, numRounds }: MatchScheduleProps
                 </span>
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                 {roundMatches.map((match) => (
                   <div
                     key={match.id}
