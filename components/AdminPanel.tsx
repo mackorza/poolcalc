@@ -43,13 +43,28 @@ export default function AdminPanel({ tournamentId, matches, currentStatus }: Adm
     }
   }
 
-  // Only show incomplete matches
+  // Separate matches into incomplete and completed
   const incompleteMatches = matches.filter((m) => !m.completed_at)
+  const completedMatches = matches.filter((m) => m.completed_at)
+
+  // Helper to get button styles based on winner status
+  const getTeamButtonStyles = (match: Match, teamId: string) => {
+    const isWinner = match.winner_id === teamId
+    const isLoser = match.winner_id && match.winner_id !== teamId
+
+    if (isWinner) {
+      return 'p-4 text-left bg-green-100 border-2 border-green-500 rounded-lg hover:bg-green-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed'
+    }
+    if (isLoser) {
+      return 'p-4 text-left bg-gray-100 border-2 border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed opacity-60'
+    }
+    return 'p-4 text-left bg-white border-2 border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed'
+  }
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">⚙️ Admin Panel</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Admin Panel</h2>
 
         <div className="flex gap-2">
           <button
@@ -88,57 +103,125 @@ export default function AdminPanel({ tournamentId, matches, currentStatus }: Adm
         </div>
       </div>
 
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-800">
-          Incomplete Matches ({incompleteMatches.length})
-        </h3>
+      <div className="space-y-6">
+        {/* Incomplete Matches Section */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800">
+            Pending Matches ({incompleteMatches.length})
+          </h3>
 
-        {incompleteMatches.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            All matches completed!
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {incompleteMatches.map((match) => (
-              <div
-                key={match.id}
-                className="border border-gray-200 rounded-lg p-4 bg-gray-50"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-semibold text-gray-600">
-                    Round {match.round_number} - Table {match.table_number}
-                  </span>
+          {incompleteMatches.length === 0 ? (
+            <div className="text-center py-4 text-gray-500 bg-gray-50 rounded-lg">
+              All matches have a winner selected!
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {incompleteMatches.map((match) => (
+                <div
+                  key={match.id}
+                  className="border border-gray-200 rounded-lg p-4 bg-gray-50"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-semibold text-gray-600">
+                      Round {match.round_number} - Table {match.table_number}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <button
+                      onClick={() => handleSetWinner(match.id, match.team1_id)}
+                      disabled={loading === match.id}
+                      className={getTeamButtonStyles(match, match.team1_id)}
+                    >
+                      <div className="font-medium text-gray-900">
+                        {match.team1.player1_name} & {match.team1.player2_name}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        {match.team1.wins}W - {match.team1.losses}L ({match.team1.points} pts)
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => handleSetWinner(match.id, match.team2_id)}
+                      disabled={loading === match.id}
+                      className={getTeamButtonStyles(match, match.team2_id)}
+                    >
+                      <div className="font-medium text-gray-900">
+                        {match.team2.player1_name} & {match.team2.player2_name}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        {match.team2.wins}W - {match.team2.losses}L ({match.team2.points} pts)
+                      </div>
+                    </button>
+                  </div>
                 </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <button
-                    onClick={() => handleSetWinner(match.id, match.team1_id)}
-                    disabled={loading === match.id}
-                    className="p-4 text-left bg-white border-2 border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <div className="font-medium text-gray-900">
-                      {match.team1.player1_name} & {match.team1.player2_name}
-                    </div>
-                    <div className="text-sm text-gray-600 mt-1">
-                      {match.team1.wins}W - {match.team1.losses}L ({match.team1.points} pts)
-                    </div>
-                  </button>
+        {/* Completed Matches Section */}
+        {completedMatches.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-800">
+              Completed Matches ({completedMatches.length})
+            </h3>
 
-                  <button
-                    onClick={() => handleSetWinner(match.id, match.team2_id)}
-                    disabled={loading === match.id}
-                    className="p-4 text-left bg-white border-2 border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <div className="font-medium text-gray-900">
-                      {match.team2.player1_name} & {match.team2.player2_name}
-                    </div>
-                    <div className="text-sm text-gray-600 mt-1">
-                      {match.team2.wins}W - {match.team2.losses}L ({match.team2.points} pts)
-                    </div>
-                  </button>
+            <div className="space-y-3">
+              {completedMatches.map((match) => (
+                <div
+                  key={match.id}
+                  className="border border-green-200 rounded-lg p-4 bg-green-50"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-semibold text-gray-600">
+                      Round {match.round_number} - Table {match.table_number}
+                    </span>
+                    <span className="text-xs text-green-600 font-medium">
+                      Completed
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <button
+                      onClick={() => handleSetWinner(match.id, match.team1_id)}
+                      disabled={loading === match.id}
+                      className={getTeamButtonStyles(match, match.team1_id)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900">
+                          {match.team1.player1_name} & {match.team1.player2_name}
+                        </span>
+                        {match.winner_id === match.team1_id && (
+                          <span className="text-green-600 font-bold">✓</span>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        {match.team1.wins}W - {match.team1.losses}L ({match.team1.points} pts)
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => handleSetWinner(match.id, match.team2_id)}
+                      disabled={loading === match.id}
+                      className={getTeamButtonStyles(match, match.team2_id)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900">
+                          {match.team2.player1_name} & {match.team2.player2_name}
+                        </span>
+                        {match.winner_id === match.team2_id && (
+                          <span className="text-green-600 font-bold">✓</span>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        {match.team2.wins}W - {match.team2.losses}L ({match.team2.points} pts)
+                      </div>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </div>

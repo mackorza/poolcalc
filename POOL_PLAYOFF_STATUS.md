@@ -38,11 +38,11 @@ A rugby-style tournament format with:
 - ✅ Make "Number of Rounds" optional for pool_playoff (auto-calculated)
 
 ### Part 4: Tournament View Updates
-- [ ] Detect tournament format in tournament/[id]/page.tsx
-- [ ] Create PoolStageView component (shows groups with standings)
-- [ ] Create PlayoffBracketView component (visual bracket like your image)
-- [ ] Add stage tabs: "Pool Stage" | "Playoffs" | "Leaderboard"
-- [ ] Update MatchSchedule to group by stage and pool
+- ✅ Detect tournament format in tournament/[id]/page.tsx
+- ✅ Create PoolStageView component (shows groups with standings)
+- ✅ Create PlayoffBracketView component (visual bracket like your image)
+- ✅ Add stage tabs: "Pool Stage" | "Playoffs" | "Leaderboard"
+- [ ] Update MatchSchedule to group by stage and pool (optional enhancement)
 
 ### Part 5: Playoff Advancement Logic
 - [ ] Create server action `advanceToPlayoffs`
