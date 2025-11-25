@@ -69,7 +69,8 @@ export default function AdminPage() {
       if (result.error) {
         setError(result.error)
       } else if (result.tournamentId) {
-        router.push(`/tournament/${result.tournamentId}`)
+        // Redirect to admin page so the creator can manage the tournament
+        router.push(`/tournament/${result.tournamentId}/admin`)
       }
     } catch (err) {
       setError('Failed to create tournament')

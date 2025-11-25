@@ -191,6 +191,24 @@ export async function updateMatchWinner(matchId: string, winnerId: string) {
   try {
     const supabase = await createClient()
 
+    // First get the current match to check if it already has a winner
+    const { data: existingMatch, error: fetchError } = await supabase
+      .from('matches')
+      .select('winner_id, team1_id, team2_id, tournament_id')
+      .eq('id', matchId)
+      .single()
+
+    if (fetchError || !existingMatch) {
+      console.error('Match fetch error:', fetchError)
+      return { error: 'Failed to fetch match' }
+    }
+
+    const previousWinnerId = existingMatch.winner_id
+    const team1Id = existingMatch.team1_id
+    const team2Id = existingMatch.team2_id
+    const loserId = winnerId === team1Id ? team2Id : team1Id
+
+    // Update the match
     const { data, error } = await supabase
       .from('matches')
       .update({
@@ -206,8 +224,79 @@ export async function updateMatchWinner(matchId: string, winnerId: string) {
       return { error: 'Failed to update match' }
     }
 
+    // If there was a previous winner, we need to reverse their stats first
+    if (previousWinnerId) {
+      const previousLoserId = previousWinnerId === team1Id ? team2Id : team1Id
+
+      // Decrement previous winner's stats
+      const { data: prevWinner } = await supabase
+        .from('teams')
+        .select('wins, points')
+        .eq('id', previousWinnerId)
+        .single()
+
+      if (prevWinner) {
+        await supabase
+          .from('teams')
+          .update({
+            wins: Math.max(0, prevWinner.wins - 1),
+            points: Math.max(0, prevWinner.points - 2),
+          })
+          .eq('id', previousWinnerId)
+      }
+
+      // Decrement previous loser's stats
+      const { data: prevLoser } = await supabase
+        .from('teams')
+        .select('losses')
+        .eq('id', previousLoserId)
+        .single()
+
+      if (prevLoser) {
+        await supabase
+          .from('teams')
+          .update({
+            losses: Math.max(0, prevLoser.losses - 1),
+          })
+          .eq('id', previousLoserId)
+      }
+    }
+
+    // Update winner's stats (wins +1, points +2)
+    const { data: winnerTeam } = await supabase
+      .from('teams')
+      .select('wins, points')
+      .eq('id', winnerId)
+      .single()
+
+    if (winnerTeam) {
+      await supabase
+        .from('teams')
+        .update({
+          wins: winnerTeam.wins + 1,
+          points: winnerTeam.points + 2,
+        })
+        .eq('id', winnerId)
+    }
+
+    // Update loser's stats (losses +1)
+    const { data: loserTeam } = await supabase
+      .from('teams')
+      .select('losses')
+      .eq('id', loserId)
+      .single()
+
+    if (loserTeam) {
+      await supabase
+        .from('teams')
+        .update({
+          losses: loserTeam.losses + 1,
+        })
+        .eq('id', loserId)
+    }
+
     revalidatePath(`/tournament/${data.tournament_id}`)
-    revalidatePath('/admin')
+    revalidatePath(`/tournament/${data.tournament_id}/admin`)
 
     return { success: true }
   } catch (error) {

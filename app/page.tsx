@@ -32,21 +32,21 @@ export default function Home() {
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl">
           <div className="p-6 bg-white rounded-lg shadow-md">
             <div className="text-4xl mb-4">🎱</div>
-            <h3 className="font-semibold text-lg mb-2">Random Teams</h3>
+            <h3 className="font-semibold text-lg mb-2 text-gray-900">Random Teams</h3>
             <p className="text-gray-600 text-sm">
               Auto-generate randomized teams from your player list
             </p>
           </div>
           <div className="p-6 bg-white rounded-lg shadow-md">
             <div className="text-4xl mb-4">📊</div>
-            <h3 className="font-semibold text-lg mb-2">Live Leaderboard</h3>
+            <h3 className="font-semibold text-lg mb-2 text-gray-900">Live Leaderboard</h3>
             <p className="text-gray-600 text-sm">
               Real-time standings that update as matches complete
             </p>
           </div>
           <div className="p-6 bg-white rounded-lg shadow-md">
             <div className="text-4xl mb-4">🏆</div>
-            <h3 className="font-semibold text-lg mb-2">Round-Robin</h3>
+            <h3 className="font-semibold text-lg mb-2 text-gray-900">Round-Robin</h3>
             <p className="text-gray-600 text-sm">
               Automatic scheduling for fair tournament brackets
             </p>

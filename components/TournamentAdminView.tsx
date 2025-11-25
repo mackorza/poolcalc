@@ -1,10 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/lib/types/database'
 import Leaderboard from './Leaderboard'
 import MatchSchedule from './MatchSchedule'
+import AdminPanel from './AdminPanel'
 import PoolStageView from './PoolStageView'
 import PlayoffBracketView from './PlayoffBracketView'
 
@@ -16,13 +18,13 @@ type Match = Database['public']['Tables']['matches']['Row'] & {
   winner: Team | null
 }
 
-interface TournamentViewProps {
+interface TournamentAdminViewProps {
   tournament: Tournament
   teams: Team[]
   matches: Match[]
 }
 
-export default function TournamentView({ tournament: initialTournament, teams: initialTeams, matches: initialMatches }: TournamentViewProps) {
+export default function TournamentAdminView({ tournament: initialTournament, teams: initialTeams, matches: initialMatches }: TournamentAdminViewProps) {
   const [tournament, setTournament] = useState(initialTournament)
   const [teams, setTeams] = useState(initialTeams)
   const [matches, setMatches] = useState(initialMatches)
@@ -159,6 +161,11 @@ export default function TournamentView({ tournament: initialTournament, teams: i
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex justify-between items-start">
             <div>
+              <div className="flex items-center gap-3 mb-2">
+                <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-bold">
+                  ADMIN MODE
+                </span>
+              </div>
               <h1 className="text-3xl font-bold text-gray-900">
                 {tournament.venue_name}
               </h1>
@@ -201,11 +208,26 @@ export default function TournamentView({ tournament: initialTournament, teams: i
                 </span>
               </div>
             </div>
+            <Link
+              href={`/tournament/${tournament.id}`}
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              View Public Page
+            </Link>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Admin Panel - Always visible on admin page */}
+        <div className="mb-8">
+          <AdminPanel
+            tournamentId={tournament.id}
+            matches={matches}
+            currentStatus={tournament.status}
+          />
+        </div>
+
         {/* Tab Navigation - only for Pool+Playoff format */}
         {isPoolPlayoff && (
           <div className="mb-6 bg-white rounded-lg shadow p-1 flex gap-1">
