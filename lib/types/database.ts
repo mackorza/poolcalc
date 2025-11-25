@@ -95,7 +95,7 @@ export interface Database {
           team2_id: string
           winner_id: string | null
           completed_at: string | null
-          stage: 'pool' | 'quarterfinal' | 'semifinal' | 'final' | 'third_place'
+          stage: 'pool' | 'quarterfinal' | 'semifinal' | 'final' | 'third_place' | 'tiebreaker'
           bracket_position: number | null
           created_at: string
         }

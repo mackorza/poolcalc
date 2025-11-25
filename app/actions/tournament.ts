@@ -325,3 +325,67 @@ export async function updateTournamentStatus(tournamentId: string, status: 'setu
     return { error: 'An unexpected error occurred' }
   }
 }
+
+export async function addTiebreakerMatch(
+  tournamentId: string,
+  team1Id: string,
+  team2Id: string,
+  tableNumber: number
+) {
+  try {
+    const supabase = await createClient()
+
+    // Get the current max round number
+    const { data: maxRoundData } = await supabase
+      .from('matches')
+      .select('round_number')
+      .eq('tournament_id', tournamentId)
+      .order('round_number', { ascending: false })
+      .limit(1)
+      .single()
+
+    const nextRound = (maxRoundData?.round_number || 0) + 1
+
+    // Create the tiebreaker match
+    const { data: match, error } = await supabase
+      .from('matches')
+      .insert({
+        tournament_id: tournamentId,
+        round_number: nextRound,
+        table_number: tableNumber,
+        team1_id: team1Id,
+        team2_id: team2Id,
+        stage: 'tiebreaker',
+        bracket_position: null,
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Tiebreaker match creation error:', error)
+      return { error: 'Failed to create tiebreaker match' }
+    }
+
+    // Update tournament num_rounds if needed
+    const { data: tournament } = await supabase
+      .from('tournaments')
+      .select('num_rounds')
+      .eq('id', tournamentId)
+      .single()
+
+    if (tournament && nextRound > tournament.num_rounds) {
+      await supabase
+        .from('tournaments')
+        .update({ num_rounds: nextRound })
+        .eq('id', tournamentId)
+    }
+
+    revalidatePath(`/tournament/${tournamentId}`)
+    revalidatePath(`/tournament/${tournamentId}/admin`)
+
+    return { success: true, matchId: match.id }
+  } catch (error) {
+    console.error('Unexpected error:', error)
+    return { error: 'An unexpected error occurred' }
+  }
+}

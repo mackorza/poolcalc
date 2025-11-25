@@ -8,8 +8,6 @@ type Match = Database['public']['Tables']['matches']['Row'] & {
   team1: Team
   team2: Team
   winner: Team | null
-  stage: 'pool' | 'quarterfinal' | 'semifinal' | 'final' | 'third_place'
-  bracket_position: number | null
 }
 
 interface PlayoffBracketViewProps {

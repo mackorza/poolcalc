@@ -8,6 +8,7 @@ import { Database } from '@/lib/types/database'
 import Leaderboard from './Leaderboard'
 import MatchSchedule from './MatchSchedule'
 import AdminPanel from './AdminPanel'
+import TiebreakerPanel from './TiebreakerPanel'
 import PoolStageView from './PoolStageView'
 import PlayoffBracketView from './PlayoffBracketView'
 
@@ -288,6 +289,13 @@ export default function TournamentAdminView({ tournament: initialTournament, tea
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-1">
               <Leaderboard teams={teams} />
+              <TiebreakerPanel
+                tournamentId={tournament.id}
+                teams={teams}
+                matches={matches}
+                numTables={tournament.num_tables}
+                onDataChange={refetchData}
+              />
             </div>
             <div className="lg:col-span-2">
               <MatchSchedule
@@ -303,6 +311,13 @@ export default function TournamentAdminView({ tournament: initialTournament, tea
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-1">
               <Leaderboard teams={teams} />
+              <TiebreakerPanel
+                tournamentId={tournament.id}
+                teams={teams}
+                matches={matches}
+                numTables={tournament.num_tables}
+                onDataChange={refetchData}
+              />
             </div>
             <div className="lg:col-span-2">
               <MatchSchedule
