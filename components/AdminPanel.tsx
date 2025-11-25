@@ -15,9 +15,10 @@ interface AdminPanelProps {
   tournamentId: string
   matches: Match[]
   currentStatus: 'setup' | 'in_progress' | 'completed'
+  onDataChange?: () => void
 }
 
-export default function AdminPanel({ tournamentId, matches, currentStatus }: AdminPanelProps) {
+export default function AdminPanel({ tournamentId, matches, currentStatus, onDataChange }: AdminPanelProps) {
   const [loading, setLoading] = useState<string | null>(null)
   const [statusLoading, setStatusLoading] = useState(false)
 
@@ -25,6 +26,8 @@ export default function AdminPanel({ tournamentId, matches, currentStatus }: Adm
     setLoading(matchId)
     try {
       await updateMatchWinner(matchId, winnerId)
+      // Trigger refetch after successful update
+      onDataChange?.()
     } catch (error) {
       console.error('Failed to update match:', error)
     } finally {
@@ -36,6 +39,8 @@ export default function AdminPanel({ tournamentId, matches, currentStatus }: Adm
     setStatusLoading(true)
     try {
       await updateTournamentStatus(tournamentId, newStatus)
+      // Trigger refetch after successful update
+      onDataChange?.()
     } catch (error) {
       console.error('Failed to update status:', error)
     } finally {

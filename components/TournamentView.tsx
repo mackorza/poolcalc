@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Database } from '@/lib/types/database'
 import Leaderboard from './Leaderboard'
@@ -32,12 +32,68 @@ export default function TournamentView({ tournament: initialTournament, teams: i
   const poolMatches = matches.filter(m => m.stage === 'pool')
   const playoffMatches = matches.filter(m => m.stage !== 'pool')
 
+  // Function to refetch all data
+  const refetchData = useCallback(async () => {
+    const supabase = createClient()
+
+    // Refetch teams
+    const { data: teamsData } = await supabase
+      .from('teams')
+      .select('*')
+      .eq('tournament_id', tournament.id)
+      .order('points', { ascending: false })
+
+    if (teamsData) {
+      setTeams(teamsData)
+    }
+
+    // Refetch matches with team details
+    const { data: matchesData } = await supabase
+      .from('matches')
+      .select(`
+        *,
+        team1:team1_id(*),
+        team2:team2_id(*),
+        winner:winner_id(*)
+      `)
+      .eq('tournament_id', tournament.id)
+      .order('round_number', { ascending: true })
+      .order('table_number', { ascending: true })
+
+    if (matchesData) {
+      const formattedMatches = (matchesData as any[]).map((match) => ({
+        id: match.id,
+        tournament_id: match.tournament_id,
+        round_number: match.round_number,
+        table_number: match.table_number,
+        team1_id: match.team1_id,
+        team2_id: match.team2_id,
+        winner_id: match.winner_id,
+        completed_at: match.completed_at,
+        stage: match.stage,
+        bracket_position: match.bracket_position,
+        created_at: match.created_at,
+        team1: match.team1,
+        team2: match.team2,
+        winner: match.winner,
+      }))
+      setMatches(formattedMatches)
+    }
+  }, [tournament.id])
+
+  // Update state when props change (from server revalidation)
+  useEffect(() => {
+    setTournament(initialTournament)
+    setTeams(initialTeams)
+    setMatches(initialMatches)
+  }, [initialTournament, initialTeams, initialMatches])
+
   useEffect(() => {
     const supabase = createClient()
 
     // Subscribe to tournament changes
     const tournamentChannel = supabase
-      .channel(`tournament-${tournament.id}`)
+      .channel(`public-tournament-${tournament.id}`)
       .on(
         'postgres_changes',
         {
@@ -56,7 +112,7 @@ export default function TournamentView({ tournament: initialTournament, teams: i
 
     // Subscribe to teams changes
     const teamsChannel = supabase
-      .channel(`teams-${tournament.id}`)
+      .channel(`public-teams-${tournament.id}`)
       .on(
         'postgres_changes',
         {
@@ -65,24 +121,15 @@ export default function TournamentView({ tournament: initialTournament, teams: i
           table: 'teams',
           filter: `tournament_id=eq.${tournament.id}`,
         },
-        async () => {
-          // Refetch teams when any team changes
-          const { data } = await supabase
-            .from('teams')
-            .select('*')
-            .eq('tournament_id', tournament.id)
-            .order('points', { ascending: false })
-
-          if (data) {
-            setTeams(data)
-          }
+        () => {
+          refetchData()
         }
       )
       .subscribe()
 
     // Subscribe to matches changes
     const matchesChannel = supabase
-      .channel(`matches-${tournament.id}`)
+      .channel(`public-matches-${tournament.id}`)
       .on(
         'postgres_changes',
         {
@@ -91,39 +138,8 @@ export default function TournamentView({ tournament: initialTournament, teams: i
           table: 'matches',
           filter: `tournament_id=eq.${tournament.id}`,
         },
-        async () => {
-          // Refetch matches with team details
-          const { data: matchesData } = await supabase
-            .from('matches')
-            .select(`
-              *,
-              team1:team1_id(*),
-              team2:team2_id(*),
-              winner:winner_id(*)
-            `)
-            .eq('tournament_id', tournament.id)
-            .order('round_number', { ascending: true })
-            .order('table_number', { ascending: true })
-
-          if (matchesData) {
-            const formattedMatches = (matchesData as any[]).map((match) => ({
-              id: match.id,
-              tournament_id: match.tournament_id,
-              round_number: match.round_number,
-              table_number: match.table_number,
-              team1_id: match.team1_id,
-              team2_id: match.team2_id,
-              winner_id: match.winner_id,
-              completed_at: match.completed_at,
-              stage: match.stage,
-              bracket_position: match.bracket_position,
-              created_at: match.created_at,
-              team1: match.team1,
-              team2: match.team2,
-              winner: match.winner,
-            }))
-            setMatches(formattedMatches)
-          }
+        () => {
+          refetchData()
         }
       )
       .subscribe()
@@ -133,7 +149,7 @@ export default function TournamentView({ tournament: initialTournament, teams: i
       supabase.removeChannel(teamsChannel)
       supabase.removeChannel(matchesChannel)
     }
-  }, [tournament.id])
+  }, [tournament.id, refetchData])
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
