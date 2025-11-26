@@ -37,7 +37,8 @@ export function createRandomizedTeams(playerNames: string[]): Array<{ player1: s
 
 /**
  * Generate round-robin schedule for teams
- * Returns array of rounds, where each round contains matches
+ * Each round fills ALL tables - matches are distributed across rounds based on table count
+ * Returns array of rounds, where each round contains exactly numTables matches
  */
 export function generateRoundRobinSchedule(
   teamIds: string[],
@@ -49,39 +50,31 @@ export function generateRoundRobinSchedule(
     throw new Error('At least 2 teams are required');
   }
 
-  const rounds: Array<Array<{ team1Id: string; team2Id: string; tableNumber: number }>> = [];
-  const teams = [...teamIds];
-
-  // If odd number of teams, add a "bye" team
-  if (teams.length % 2 !== 0) {
-    teams.push('BYE');
+  // Generate all possible matches (full round-robin)
+  const allMatches: Array<{ team1Id: string; team2Id: string }> = [];
+  for (let i = 0; i < numTeams; i++) {
+    for (let j = i + 1; j < numTeams; j++) {
+      allMatches.push({
+        team1Id: teamIds[i],
+        team2Id: teamIds[j],
+      });
+    }
   }
 
-  const n = teams.length;
-  const totalRounds = n - 1;
-  const matchesPerRound = n / 2;
+  // Shuffle matches to randomize the order
+  const shuffledMatches = shuffleArray(allMatches);
 
-  for (let round = 0; round < totalRounds; round++) {
+  // Distribute matches into rounds, filling all tables each round
+  const rounds: Array<Array<{ team1Id: string; team2Id: string; tableNumber: number }>> = [];
+
+  for (let i = 0; i < shuffledMatches.length; i += numTables) {
     const roundMatches: Array<{ team1Id: string; team2Id: string; tableNumber: number }> = [];
-    let tableNumber = 1;
 
-    for (let match = 0; match < matchesPerRound; match++) {
-      const home = (round + match) % (n - 1);
-      const away = (n - 1 - match + round) % (n - 1);
-
-      // Last team stays in place, others rotate
-      const team1 = match === 0 ? teams[n - 1] : teams[home];
-      const team2 = teams[away];
-
-      // Skip matches with BYE team
-      if (team1 !== 'BYE' && team2 !== 'BYE') {
-        roundMatches.push({
-          team1Id: team1,
-          team2Id: team2,
-          tableNumber: ((tableNumber - 1) % numTables) + 1,
-        });
-        tableNumber++;
-      }
+    for (let j = 0; j < numTables && i + j < shuffledMatches.length; j++) {
+      roundMatches.push({
+        ...shuffledMatches[i + j],
+        tableNumber: j + 1,
+      });
     }
 
     if (roundMatches.length > 0) {
@@ -108,7 +101,7 @@ export function calculateTotalRounds(numTeams: number): number {
 
 /**
  * Get recommended number of rounds based on players and tables
- * Returns recommendation for getting a clear winner
+ * Rounds are calculated based on filling all tables each round
  */
 export function getRecommendedRounds(numPlayers: number, numTables: number): {
   recommended: number
@@ -117,29 +110,23 @@ export function getRecommendedRounds(numPlayers: number, numTables: number): {
   explanation: string
 } {
   const numTeams = Math.floor(numPlayers / 2)
-  const fullRoundRobin = calculateTotalRounds(numTeams)
   const totalMatches = calculateTotalMatches(numTeams)
 
-  // Calculate how many matches can be played per round with available tables
-  const matchesPerRound = Math.min(Math.floor(numTeams / 2), numTables)
+  // Calculate rounds needed to complete all matches with given tables
+  const roundsNeeded = Math.ceil(totalMatches / numTables)
 
-  // For a clear winner, we want every team to play every other team
-  // This is a full round-robin tournament
-  const recommended = fullRoundRobin
+  // Recommended: Full round-robin (all teams play each other once)
+  const recommended = roundsNeeded
 
-  // Minimum: At least half of full round-robin to get meaningful results
-  const min = Math.max(3, Math.ceil(fullRoundRobin / 2))
+  // Minimum: At least enough rounds to have meaningful results
+  const min = Math.max(2, Math.ceil(roundsNeeded / 2))
 
   // Maximum: Full round-robin
-  const max = fullRoundRobin
+  const max = roundsNeeded
 
-  let explanation = `Full round-robin: ${fullRoundRobin} rounds (${totalMatches} total matches). `
-  explanation += `Each team plays every other team once, ensuring a fair winner. `
-
-  if (matchesPerRound < Math.floor(numTeams / 2)) {
-    const roundsNeeded = Math.ceil(totalMatches / matchesPerRound)
-    explanation += `With ${numTables} table${numTables > 1 ? 's' : ''}, this will take approximately ${roundsNeeded} rounds to complete all matches.`
-  }
+  let explanation = `With ${numTeams} teams and ${numTables} table${numTables > 1 ? 's' : ''}: `
+  explanation += `${totalMatches} total matches across ${roundsNeeded} rounds. `
+  explanation += `Each round uses all ${numTables} table${numTables > 1 ? 's' : ''}.`
 
   return {
     recommended,
