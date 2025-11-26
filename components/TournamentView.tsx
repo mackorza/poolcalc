@@ -39,10 +39,7 @@ export default function TournamentView({ tournament: initialTournament, teams: i
   const checkForWinner = useCallback(() => {
     if (teams.length < 2 || matches.length === 0) return null
 
-    // Only show winner when tournament status is 'completed'
-    if (tournament.status !== 'completed') return null
-
-    // Also verify all matches are completed
+    // Verify all matches are completed
     const allMatchesCompleted = matches.every(m => m.completed_at)
     if (!allMatchesCompleted) return null
 
@@ -64,7 +61,7 @@ export default function TournamentView({ tournament: initialTournament, teams: i
     }
 
     return null
-  }, [teams, matches, tournament.status])
+  }, [teams, matches])
 
   const winner = checkForWinner()
 
@@ -248,20 +245,6 @@ export default function TournamentView({ tournament: initialTournament, teams: i
 
   return (
     <div className="min-h-screen bg-slate-900">
-      {/* Winner Banner */}
-      {showWinnerBanner && winner && (
-        <div className="bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-500 py-4 px-5 text-center animate-pulse">
-          <div>
-            <div className="text-3xl font-bold text-slate-900">
-              🏆 CHAMPIONS 🏆
-            </div>
-            <div className="text-2xl font-bold text-slate-800 mt-1">
-              {winner.player1_name} & {winner.player2_name}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-900 to-slate-950 shadow-lg">
         <div className="px-5 py-6">
@@ -312,6 +295,20 @@ export default function TournamentView({ tournament: initialTournament, teams: i
           </div>
         </div>
       </div>
+
+      {/* Winner Banner - below header */}
+      {showWinnerBanner && winner && (
+        <div className="bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-500 py-4 px-5 text-center animate-pulse">
+          <div>
+            <div className="text-3xl font-bold text-slate-900">
+              🏆 CHAMPIONS 🏆
+            </div>
+            <div className="text-2xl font-bold text-slate-800 mt-1">
+              {winner.player1_name} & {winner.player2_name}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="px-5 py-8">
         {/* Tab Navigation - only for Pool+Playoff format */}
