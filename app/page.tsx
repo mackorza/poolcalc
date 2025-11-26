@@ -2,13 +2,13 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 to-blue-50">
+    <div className="flex min-h-screen items-center justify-center bg-slate-900">
       <main className="flex flex-col items-center gap-8 p-8 text-center">
         <div className="space-y-4">
-          <h1 className="text-6xl font-bold text-gray-900">
-            Pool<span className="text-blue-600">Calc</span>
+          <h1 className="text-6xl font-bold text-slate-100">
+            Pool<span className="text-blue-500">Calc</span>
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl">
+          <p className="text-xl text-slate-400 max-w-2xl">
             Manage your pool tournaments with ease. Create teams, schedule matches,
             and track scores in real-time.
           </p>
@@ -23,31 +23,31 @@ export default function Home() {
           </Link>
           <Link
             href="/tournaments"
-            className="px-8 py-4 bg-white text-blue-600 border-2 border-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+            className="px-8 py-4 bg-slate-800 text-blue-400 border-2 border-blue-500 rounded-lg font-semibold hover:bg-slate-700 transition-colors"
           >
             View Tournaments
           </Link>
         </div>
 
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl">
-          <div className="p-6 bg-white rounded-lg shadow-md">
+          <div className="p-6 bg-slate-800 rounded-lg shadow-lg border border-slate-700">
             <div className="text-4xl mb-4">🎱</div>
-            <h3 className="font-semibold text-lg mb-2 text-gray-900">Random Teams</h3>
-            <p className="text-gray-600 text-sm">
+            <h3 className="font-semibold text-lg mb-2 text-slate-100">Random Teams</h3>
+            <p className="text-slate-400 text-sm">
               Auto-generate randomized teams from your player list
             </p>
           </div>
-          <div className="p-6 bg-white rounded-lg shadow-md">
+          <div className="p-6 bg-slate-800 rounded-lg shadow-lg border border-slate-700">
             <div className="text-4xl mb-4">📊</div>
-            <h3 className="font-semibold text-lg mb-2 text-gray-900">Live Leaderboard</h3>
-            <p className="text-gray-600 text-sm">
+            <h3 className="font-semibold text-lg mb-2 text-slate-100">Live Leaderboard</h3>
+            <p className="text-slate-400 text-sm">
               Real-time standings that update as matches complete
             </p>
           </div>
-          <div className="p-6 bg-white rounded-lg shadow-md">
+          <div className="p-6 bg-slate-800 rounded-lg shadow-lg border border-slate-700">
             <div className="text-4xl mb-4">🏆</div>
-            <h3 className="font-semibold text-lg mb-2 text-gray-900">Round-Robin</h3>
-            <p className="text-gray-600 text-sm">
+            <h3 className="font-semibold text-lg mb-2 text-slate-100">Round-Robin</h3>
+            <p className="text-slate-400 text-sm">
               Automatic scheduling for fair tournament brackets
             </p>
           </div>

@@ -238,15 +238,15 @@ export default function TournamentView({ tournament: initialTournament, teams: i
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+    <div className="min-h-screen bg-slate-900">
       {/* Winner Banner */}
       {showWinnerBanner && winner && (
-        <div className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-400 py-4 px-4 text-center animate-pulse">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-3xl font-bold text-gray-900">
+        <div className="bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-500 py-4 px-5 text-center animate-pulse">
+          <div>
+            <div className="text-3xl font-bold text-slate-900">
               🏆 CHAMPIONS 🏆
             </div>
-            <div className="text-2xl font-bold text-gray-800 mt-1">
+            <div className="text-2xl font-bold text-slate-800 mt-1">
               {winner.player1_name} & {winner.player2_name}
             </div>
           </div>
@@ -254,14 +254,14 @@ export default function TournamentView({ tournament: initialTournament, teams: i
       )}
 
       {/* Header */}
-      <div className="bg-white shadow-md">
-        <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="bg-blue-900 shadow-lg">
+        <div className="px-5 py-6">
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-white">
                 {tournament.venue_name}
               </h1>
-              <div className="mt-2 flex flex-wrap gap-4 text-gray-600">
+              <div className="mt-2 flex flex-wrap gap-4 text-blue-200">
                 <span className="flex items-center gap-1">
                   📅 {formatDate(tournament.tournament_date)}
                 </span>
@@ -277,23 +277,23 @@ export default function TournamentView({ tournament: initialTournament, teams: i
                 )}
               </div>
               <div className="mt-2 flex gap-2 flex-wrap">
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                <span className="px-3 py-1 bg-blue-700 text-blue-100 rounded-full text-sm font-medium">
                   {tournament.num_tables} {tournament.num_tables === 1 ? 'Table' : 'Tables'}
                 </span>
                 {!isPoolPlayoff && (
-                  <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                  <span className="px-3 py-1 bg-purple-700 text-purple-100 rounded-full text-sm font-medium">
                     {tournament.num_rounds} {tournament.num_rounds === 1 ? 'Round' : 'Rounds'}
                   </span>
                 )}
-                <span className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-medium">
+                <span className="px-3 py-1 bg-indigo-700 text-indigo-100 rounded-full text-sm font-medium">
                   {isPoolPlayoff ? 'Pool + Playoffs' : 'Round-Robin'}
                 </span>
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                   tournament.status === 'completed'
-                    ? 'bg-green-100 text-green-800'
+                    ? 'bg-green-700 text-green-100'
                     : tournament.status === 'in_progress'
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-gray-100 text-gray-800'
+                    ? 'bg-yellow-600 text-yellow-100'
+                    : 'bg-slate-600 text-slate-200'
                 }`}>
                   {tournament.status === 'in_progress' ? 'In Progress' :
                    tournament.status === 'completed' ? 'Completed' : 'Setup'}
@@ -304,16 +304,16 @@ export default function TournamentView({ tournament: initialTournament, teams: i
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="px-5 py-8">
         {/* Tab Navigation - only for Pool+Playoff format */}
         {isPoolPlayoff && (
-          <div className="mb-6 bg-white rounded-lg shadow p-1 flex gap-1">
+          <div className="mb-6 bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-1 flex gap-1">
             <button
               onClick={() => setActiveTab('leaderboard')}
               className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
                 activeTab === 'leaderboard'
                   ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-slate-300 hover:bg-slate-700'
               }`}
             >
               Leaderboard
@@ -323,7 +323,7 @@ export default function TournamentView({ tournament: initialTournament, teams: i
               className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
                 activeTab === 'pool'
                   ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-slate-300 hover:bg-slate-700'
               }`}
             >
               Pool Stage
@@ -333,7 +333,7 @@ export default function TournamentView({ tournament: initialTournament, teams: i
               className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
                 activeTab === 'playoffs'
                   ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-slate-300 hover:bg-slate-700'
               }`}
             >
               Playoffs
@@ -343,23 +343,31 @@ export default function TournamentView({ tournament: initialTournament, teams: i
 
         {/* Round-Robin View */}
         {!isPoolPlayoff && (
-          <div className="space-y-6">
-            <Leaderboard teams={teams} />
-            <MatchSchedule
-              matches={matches}
-              numRounds={tournament.num_rounds}
-            />
+          <div className="flex gap-6">
+            <div className="w-80 flex-shrink-0">
+              <Leaderboard teams={teams} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <MatchSchedule
+                matches={matches}
+                numRounds={tournament.num_rounds}
+              />
+            </div>
           </div>
         )}
 
         {/* Pool+Playoff Views */}
         {isPoolPlayoff && activeTab === 'leaderboard' && (
-          <div className="space-y-6">
-            <Leaderboard teams={teams} />
-            <MatchSchedule
-              matches={poolMatches}
-              numRounds={tournament.num_rounds}
-            />
+          <div className="flex gap-6">
+            <div className="w-80 flex-shrink-0">
+              <Leaderboard teams={teams} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <MatchSchedule
+                matches={poolMatches}
+                numRounds={tournament.num_rounds}
+              />
+            </div>
           </div>
         )}
 

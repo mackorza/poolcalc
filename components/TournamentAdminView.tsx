@@ -174,21 +174,21 @@ export default function TournamentAdminView({ tournament: initialTournament, tea
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+    <div className="min-h-screen bg-slate-900">
       {/* Header */}
-      <div className="bg-white shadow-md">
+      <div className="bg-blue-900 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex justify-between items-start">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-bold">
+                <span className="px-3 py-1 bg-orange-600 text-orange-100 rounded-full text-sm font-bold">
                   ADMIN MODE
                 </span>
               </div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-white">
                 {tournament.venue_name}
               </h1>
-              <div className="mt-2 flex flex-wrap gap-4 text-gray-600">
+              <div className="mt-2 flex flex-wrap gap-4 text-blue-200">
                 <span className="flex items-center gap-1">
                   📅 {formatDate(tournament.tournament_date)}
                 </span>
@@ -204,23 +204,23 @@ export default function TournamentAdminView({ tournament: initialTournament, tea
                 )}
               </div>
               <div className="mt-2 flex gap-2 flex-wrap">
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                <span className="px-3 py-1 bg-blue-700 text-blue-100 rounded-full text-sm font-medium">
                   {tournament.num_tables} {tournament.num_tables === 1 ? 'Table' : 'Tables'}
                 </span>
                 {!isPoolPlayoff && (
-                  <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                  <span className="px-3 py-1 bg-purple-700 text-purple-100 rounded-full text-sm font-medium">
                     {tournament.num_rounds} {tournament.num_rounds === 1 ? 'Round' : 'Rounds'}
                   </span>
                 )}
-                <span className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-medium">
+                <span className="px-3 py-1 bg-indigo-700 text-indigo-100 rounded-full text-sm font-medium">
                   {isPoolPlayoff ? 'Pool + Playoffs' : 'Round-Robin'}
                 </span>
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                   tournament.status === 'completed'
-                    ? 'bg-green-100 text-green-800'
+                    ? 'bg-green-700 text-green-100'
                     : tournament.status === 'in_progress'
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-gray-100 text-gray-800'
+                    ? 'bg-yellow-600 text-yellow-100'
+                    : 'bg-slate-600 text-slate-200'
                 }`}>
                   {tournament.status === 'in_progress' ? 'In Progress' :
                    tournament.status === 'completed' ? 'Completed' : 'Setup'}
@@ -229,7 +229,7 @@ export default function TournamentAdminView({ tournament: initialTournament, tea
             </div>
             <Link
               href={`/tournament/${tournament.id}`}
-              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
             >
               View Public Page
             </Link>
