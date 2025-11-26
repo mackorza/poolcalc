@@ -343,11 +343,11 @@ export default function TournamentView({ tournament: initialTournament, teams: i
 
         {/* Round-Robin View */}
         {!isPoolPlayoff && (
-          <div className="flex gap-6">
-            <div className="w-80 flex-shrink-0">
+          <div className="grid grid-cols-3 gap-6">
+            <div className="col-span-1">
               <Leaderboard teams={teams} />
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="col-span-2">
               <MatchSchedule
                 matches={matches}
                 numRounds={tournament.num_rounds}
@@ -358,11 +358,11 @@ export default function TournamentView({ tournament: initialTournament, teams: i
 
         {/* Pool+Playoff Views */}
         {isPoolPlayoff && activeTab === 'leaderboard' && (
-          <div className="flex gap-6">
-            <div className="w-80 flex-shrink-0">
+          <div className="grid grid-cols-3 gap-6">
+            <div className="col-span-1">
               <Leaderboard teams={teams} />
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="col-span-2">
               <MatchSchedule
                 matches={poolMatches}
                 numRounds={tournament.num_rounds}
