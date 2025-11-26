@@ -310,7 +310,7 @@ export default function TournamentView({ tournament: initialTournament, teams: i
         </div>
       )}
 
-      <div className="px-5 py-8">
+      <div className="px-5 py-8 pb-24 lg:pb-8">
         {/* Tab Navigation - only for Pool+Playoff format */}
         {isPoolPlayoff && (
           <div className="mb-6 bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-1 flex gap-1">
@@ -349,11 +349,11 @@ export default function TournamentView({ tournament: initialTournament, teams: i
 
         {/* Round-Robin View */}
         {!isPoolPlayoff && (
-          <div className="grid grid-cols-3 gap-6">
-            <div className="col-span-1">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div id="leaderboard" className="lg:col-span-1 scroll-mt-4">
               <Leaderboard teams={teams} />
             </div>
-            <div className="col-span-2">
+            <div id="match-schedule" className="lg:col-span-2 scroll-mt-4">
               <MatchSchedule
                 matches={matches}
                 numRounds={tournament.num_rounds}
@@ -364,11 +364,11 @@ export default function TournamentView({ tournament: initialTournament, teams: i
 
         {/* Pool+Playoff Views */}
         {isPoolPlayoff && activeTab === 'leaderboard' && (
-          <div className="grid grid-cols-3 gap-6">
-            <div className="col-span-1">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div id="leaderboard-pool" className="lg:col-span-1 scroll-mt-4">
               <Leaderboard teams={teams} />
             </div>
-            <div className="col-span-2">
+            <div id="match-schedule-pool" className="lg:col-span-2 scroll-mt-4">
               <MatchSchedule
                 matches={poolMatches}
                 numRounds={tournament.num_rounds}
@@ -384,6 +384,40 @@ export default function TournamentView({ tournament: initialTournament, teams: i
         {isPoolPlayoff && activeTab === 'playoffs' && (
           <PlayoffBracketView matches={playoffMatches} teams={teams} />
         )}
+      </div>
+
+      {/* Mobile Footer Navigation - Public Page (only Leaderboard and Matches) */}
+      <div className="fixed bottom-0 left-0 right-0 lg:hidden z-50">
+        <div className="mx-3 mb-3">
+          <div className="flex gap-2 p-2 rounded-2xl bg-slate-800/80 backdrop-blur-lg border border-slate-600/50 shadow-xl">
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById('leaderboard') || document.getElementById('leaderboard-pool')
+                el?.scrollIntoView({ behavior: 'smooth' })
+              }}
+              className="flex-1 flex flex-col items-center gap-1 py-2 px-3 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 transition-all"
+            >
+              <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <span className="text-xs font-medium text-white">Leaderboard</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById('match-schedule') || document.getElementById('match-schedule-pool')
+                el?.scrollIntoView({ behavior: 'smooth' })
+              }}
+              className="flex-1 flex flex-col items-center gap-1 py-2 px-3 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 transition-all"
+            >
+              <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span className="text-xs font-medium text-white">Matches</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )
