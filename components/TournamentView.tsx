@@ -254,7 +254,7 @@ export default function TournamentView({ tournament: initialTournament, teams: i
       )}
 
       {/* Header */}
-      <div className="bg-blue-900 shadow-lg">
+      <div className="bg-gradient-to-r from-blue-900 to-slate-950 shadow-lg">
         <div className="px-5 py-6">
           <div className="flex justify-between items-start">
             <div>
