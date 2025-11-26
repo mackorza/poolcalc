@@ -35,6 +35,9 @@ export default function TournamentView({ tournament: initialTournament, teams: i
   const poolMatches = matches.filter(m => m.stage === 'pool')
   const playoffMatches = matches.filter(m => m.stage !== 'pool')
 
+  // Check if all matches have winners selected
+  const allMatchesCompleted = matches.length > 0 && matches.every(m => m.completed_at)
+
   // Check for a clear winner
   const checkForWinner = useCallback(() => {
     if (teams.length < 2 || matches.length === 0) return null
@@ -281,14 +284,14 @@ export default function TournamentView({ tournament: initialTournament, teams: i
                   {isPoolPlayoff ? 'Pool + Playoffs' : 'Round-Robin'}
                 </span>
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  tournament.status === 'completed'
+                  tournament.status === 'completed' || allMatchesCompleted
                     ? 'bg-green-700 text-green-100'
                     : tournament.status === 'in_progress'
                     ? 'bg-yellow-600 text-yellow-100'
                     : 'bg-slate-600 text-slate-200'
-                }`}>
-                  {tournament.status === 'in_progress' ? 'In Progress' :
-                   tournament.status === 'completed' ? 'Completed' : 'Setup'}
+                } ${allMatchesCompleted && tournament.status !== 'completed' ? 'animate-pulse' : ''}`}>
+                  {tournament.status === 'completed' || allMatchesCompleted ? 'Completed' :
+                   tournament.status === 'in_progress' ? 'In Progress' : 'Setup'}
                 </span>
               </div>
             </div>

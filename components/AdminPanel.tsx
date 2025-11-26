@@ -51,6 +51,7 @@ export default function AdminPanel({ tournamentId, matches, currentStatus, onDat
   // Separate matches into incomplete and completed
   const incompleteMatches = matches.filter((m) => !m.completed_at)
   const completedMatches = matches.filter((m) => m.completed_at)
+  const allMatchesCompleted = matches.length > 0 && incompleteMatches.length === 0
 
   // Helper to get button styles based on winner status
   const getTeamButtonStyles = (match: Match, teamId: string) => {
@@ -71,7 +72,7 @@ export default function AdminPanel({ tournamentId, matches, currentStatus, onDat
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-slate-100">Admin Panel</h2>
 
-        <div className="flex gap-2">
+        <div className="hidden lg:flex gap-2">
           <button
             onClick={() => handleStatusChange('setup')}
             disabled={statusLoading || currentStatus === 'setup'}
@@ -84,15 +85,19 @@ export default function AdminPanel({ tournamentId, matches, currentStatus, onDat
             Setup
           </button>
           <button
-            onClick={() => handleStatusChange('in_progress')}
-            disabled={statusLoading || currentStatus === 'in_progress'}
+            onClick={() => handleStatusChange(allMatchesCompleted ? 'completed' : 'in_progress')}
+            disabled={statusLoading || (allMatchesCompleted ? currentStatus === 'completed' : currentStatus === 'in_progress')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              currentStatus === 'in_progress'
-                ? 'bg-yellow-600 text-white cursor-not-allowed'
-                : 'bg-yellow-700 text-yellow-100 hover:bg-yellow-600'
+              allMatchesCompleted
+                ? currentStatus === 'completed'
+                  ? 'bg-green-600 text-white cursor-not-allowed'
+                  : 'bg-green-600 text-white hover:bg-green-500 animate-pulse'
+                : currentStatus === 'in_progress'
+                  ? 'bg-yellow-600 text-white cursor-not-allowed'
+                  : 'bg-yellow-700 text-yellow-100 hover:bg-yellow-600'
             }`}
           >
-            In Progress
+            {allMatchesCompleted ? 'Mark Completed' : 'In Progress'}
           </button>
           <button
             onClick={() => handleStatusChange('completed')}
