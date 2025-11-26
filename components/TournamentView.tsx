@@ -39,6 +39,10 @@ export default function TournamentView({ tournament: initialTournament, teams: i
   const checkForWinner = useCallback(() => {
     if (teams.length < 2 || matches.length === 0) return null
 
+    // Only show winner when tournament status is 'completed'
+    if (tournament.status !== 'completed') return null
+
+    // Also verify all matches are completed
     const allMatchesCompleted = matches.every(m => m.completed_at)
     if (!allMatchesCompleted) return null
 
@@ -48,14 +52,19 @@ export default function TournamentView({ tournament: initialTournament, teams: i
       return teams.find(t => t.id === tiebreakerMatch.winner_id) || null
     }
 
+    // Sort teams by points (highest first), then by wins as tiebreaker
+    const sortedTeams = [...teams].sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points
+      return b.wins - a.wins
+    })
+
     // Check if there's a clear winner (no tie at top)
-    const sortedTeams = [...teams].sort((a, b) => b.points - a.points)
     if (sortedTeams[0].points > sortedTeams[1].points) {
       return sortedTeams[0]
     }
 
     return null
-  }, [teams, matches])
+  }, [teams, matches, tournament.status])
 
   const winner = checkForWinner()
 
