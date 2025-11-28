@@ -37,8 +37,8 @@ export function createRandomizedTeams(playerNames: string[]): Array<{ player1: s
 
 /**
  * Generate round-robin schedule for teams
- * Each round fills ALL tables - matches are distributed across rounds based on table count
- * Returns array of rounds, where each round contains exactly numTables matches
+ * Each round fills up to numTables matches, ensuring no team plays more than once per round
+ * Returns array of rounds, where each round contains matches for available tables
  */
 export function generateRoundRobinSchedule(
   teamIds: string[],
@@ -62,19 +62,36 @@ export function generateRoundRobinSchedule(
   }
 
   // Shuffle matches to randomize the order
-  const shuffledMatches = shuffleArray(allMatches);
+  const remainingMatches = shuffleArray(allMatches);
 
-  // Distribute matches into rounds, filling all tables each round
+  // Distribute matches into rounds, ensuring no team plays more than once per round
   const rounds: Array<Array<{ team1Id: string; team2Id: string; tableNumber: number }>> = [];
 
-  for (let i = 0; i < shuffledMatches.length; i += numTables) {
+  while (remainingMatches.length > 0) {
     const roundMatches: Array<{ team1Id: string; team2Id: string; tableNumber: number }> = [];
+    const teamsPlayingThisRound = new Set<string>();
+    const matchesUsedIndices: number[] = [];
 
-    for (let j = 0; j < numTables && i + j < shuffledMatches.length; j++) {
-      roundMatches.push({
-        ...shuffledMatches[i + j],
-        tableNumber: j + 1,
-      });
+    // Try to fill tables for this round
+    for (let i = 0; i < remainingMatches.length && roundMatches.length < numTables; i++) {
+      const match = remainingMatches[i];
+
+      // Check if either team is already playing in this round
+      if (!teamsPlayingThisRound.has(match.team1Id) && !teamsPlayingThisRound.has(match.team2Id)) {
+        // Add match to this round
+        roundMatches.push({
+          ...match,
+          tableNumber: roundMatches.length + 1,
+        });
+        teamsPlayingThisRound.add(match.team1Id);
+        teamsPlayingThisRound.add(match.team2Id);
+        matchesUsedIndices.push(i);
+      }
+    }
+
+    // Remove used matches from remaining (in reverse order to preserve indices)
+    for (let i = matchesUsedIndices.length - 1; i >= 0; i--) {
+      remainingMatches.splice(matchesUsedIndices[i], 1);
     }
 
     if (roundMatches.length > 0) {
