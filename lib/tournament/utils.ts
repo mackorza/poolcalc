@@ -36,9 +36,9 @@ export function createRandomizedTeams(playerNames: string[]): Array<{ player1: s
 }
 
 /**
- * Generate round-robin schedule for teams
- * Each round fills up to numTables matches, ensuring no team plays more than once per round
- * Returns array of rounds, where each round contains matches for available tables
+ * Generate round-robin schedule for teams using the circle method
+ * This ensures optimal distribution where each team plays exactly once per round
+ * and all available tables are used when possible
  */
 export function generateRoundRobinSchedule(
   teamIds: string[],
@@ -50,56 +50,80 @@ export function generateRoundRobinSchedule(
     throw new Error('At least 2 teams are required');
   }
 
-  // Generate all possible matches (full round-robin)
-  const allMatches: Array<{ team1Id: string; team2Id: string }> = [];
-  for (let i = 0; i < numTeams; i++) {
-    for (let j = i + 1; j < numTeams; j++) {
-      allMatches.push({
-        team1Id: teamIds[i],
-        team2Id: teamIds[j],
-      });
-    }
+  // Shuffle teams first for randomization
+  const shuffledTeams = shuffleArray([...teamIds]);
+
+  // Use circle method for round-robin scheduling
+  // This guarantees each team plays exactly once per round
+  const teams = [...shuffledTeams];
+
+  // If odd number of teams, add a "bye" placeholder
+  const hasBye = teams.length % 2 !== 0;
+  if (hasBye) {
+    teams.push('BYE');
   }
 
-  // Shuffle matches to randomize the order
-  const remainingMatches = shuffleArray(allMatches);
+  const n = teams.length;
+  const totalRounds = n - 1; // Each team plays n-1 rounds in full round-robin
+  const matchesPerRound = Math.floor(n / 2); // n/2 matches per round
 
-  // Distribute matches into rounds, ensuring no team plays more than once per round
-  const rounds: Array<Array<{ team1Id: string; team2Id: string; tableNumber: number }>> = [];
+  // Generate all rounds using circle method
+  const allRounds: Array<Array<{ team1Id: string; team2Id: string }>> = [];
 
-  while (remainingMatches.length > 0) {
-    const roundMatches: Array<{ team1Id: string; team2Id: string; tableNumber: number }> = [];
-    const teamsPlayingThisRound = new Set<string>();
-    const matchesUsedIndices: number[] = [];
+  for (let round = 0; round < totalRounds; round++) {
+    const roundMatches: Array<{ team1Id: string; team2Id: string }> = [];
 
-    // Try to fill tables for this round
-    for (let i = 0; i < remainingMatches.length && roundMatches.length < numTables; i++) {
-      const match = remainingMatches[i];
+    for (let i = 0; i < matchesPerRound; i++) {
+      const home = (round + i) % (n - 1);
+      let away = (n - 1 - i + round) % (n - 1);
 
-      // Check if either team is already playing in this round
-      if (!teamsPlayingThisRound.has(match.team1Id) && !teamsPlayingThisRound.has(match.team2Id)) {
-        // Add match to this round
-        roundMatches.push({
-          ...match,
-          tableNumber: roundMatches.length + 1,
-        });
-        teamsPlayingThisRound.add(match.team1Id);
-        teamsPlayingThisRound.add(match.team2Id);
-        matchesUsedIndices.push(i);
+      // Last team stays fixed, others rotate
+      if (i === 0) {
+        away = n - 1;
+      }
+
+      const team1 = teams[home];
+      const team2 = teams[away];
+
+      // Skip bye matches
+      if (team1 !== 'BYE' && team2 !== 'BYE') {
+        roundMatches.push({ team1Id: team1, team2Id: team2 });
       }
     }
 
-    // Remove used matches from remaining (in reverse order to preserve indices)
-    for (let i = matchesUsedIndices.length - 1; i >= 0; i--) {
-      remainingMatches.splice(matchesUsedIndices[i], 1);
-    }
-
     if (roundMatches.length > 0) {
-      rounds.push(roundMatches);
+      allRounds.push(roundMatches);
     }
   }
 
-  return rounds;
+  // Now distribute matches across tables, respecting numTables limit
+  // If we have fewer tables than matches per round, we need to split rounds
+  const finalRounds: Array<Array<{ team1Id: string; team2Id: string; tableNumber: number }>> = [];
+
+  for (const roundMatches of allRounds) {
+    // If all matches fit on available tables, keep as one round
+    if (roundMatches.length <= numTables) {
+      finalRounds.push(
+        roundMatches.map((match, idx) => ({
+          ...match,
+          tableNumber: idx + 1,
+        }))
+      );
+    } else {
+      // Split into multiple sub-rounds based on table capacity
+      for (let i = 0; i < roundMatches.length; i += numTables) {
+        const subRoundMatches = roundMatches.slice(i, i + numTables);
+        finalRounds.push(
+          subRoundMatches.map((match, idx) => ({
+            ...match,
+            tableNumber: idx + 1,
+          }))
+        );
+      }
+    }
+  }
+
+  return finalRounds;
 }
 
 /**
