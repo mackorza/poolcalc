@@ -39,6 +39,7 @@ export async function createTournament(data: CreateTournamentData) {
         start_time: data.startTime,
         num_tables: data.numTables,
         num_rounds: data.numRounds,
+        num_players: data.playerNames.length,
         status: 'setup',
         tournament_format: data.tournamentFormat,
       })

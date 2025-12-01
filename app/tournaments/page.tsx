@@ -102,6 +102,12 @@ export default async function TournamentsPage() {
                           {tournament.num_rounds === 1 ? 'round' : 'rounds'}
                         </span>
                       </div>
+                      <div className="flex items-center gap-1">
+                        <span className="font-semibold text-white">{tournament.num_players || 0}</span>
+                        <span className="text-xs text-slate-500">
+                          {tournament.num_players === 1 ? 'player' : 'players'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
