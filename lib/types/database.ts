@@ -32,7 +32,7 @@ export interface Database {
           start_time?: string | null
           num_tables: number
           num_rounds: number
-          num_players: number
+          num_players?: number
           status?: 'setup' | 'in_progress' | 'completed'
           tournament_format?: 'round_robin' | 'pool_playoff'
           created_at?: string
