@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createTournament } from '@/app/actions/tournament'
 import { getRecommendedRounds } from '@/lib/tournament/utils'
@@ -28,6 +28,13 @@ export default function AdminPage() {
     }
     return null
   }, [players.length, numTables, tournamentFormat])
+
+  // Automatically update rounds when players or tables change
+  useEffect(() => {
+    if (recommendation && tournamentFormat === 'round_robin') {
+      setNumRounds(recommendation.recommended)
+    }
+  }, [recommendation, tournamentFormat])
 
   // Get playoff format info (for pool+playoff)
   const playoffInfo = useMemo(() => {
