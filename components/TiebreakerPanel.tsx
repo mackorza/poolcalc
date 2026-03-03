@@ -2,14 +2,9 @@
 
 import { useState } from 'react'
 import { addTiebreakerMatch } from '@/app/actions/tournament'
-import { Database } from '@/lib/types/database'
+import type { Team, MatchWithTeams } from '@/lib/db/types'
 
-type Team = Database['public']['Tables']['teams']['Row']
-type Match = Database['public']['Tables']['matches']['Row'] & {
-  team1: Team
-  team2: Team
-  winner: Team | null
-}
+type Match = MatchWithTeams
 
 interface TiebreakerPanelProps {
   tournamentId: string

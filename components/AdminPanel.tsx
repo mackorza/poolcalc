@@ -1,32 +1,38 @@
 'use client'
 
 import { useState } from 'react'
-import { updateMatchWinner, updateTournamentStatus } from '@/app/actions/tournament'
-import { Database } from '@/lib/types/database'
+import { updateMatchWinner, clearMatchWinner, updateTournamentStatus, addTiebreakerMatch } from '@/app/actions/tournament'
+import type { Team, MatchWithTeams } from '@/lib/db/types'
 
-type Team = Database['public']['Tables']['teams']['Row']
-type Match = Database['public']['Tables']['matches']['Row'] & {
-  team1: Team
-  team2: Team
-  winner: Team | null
-}
+type Match = MatchWithTeams
 
 interface AdminPanelProps {
   tournamentId: string
   matches: Match[]
+  teams: Team[]
+  numTables: number
   currentStatus: 'setup' | 'in_progress' | 'completed'
   onDataChange?: () => void
 }
 
-export default function AdminPanel({ tournamentId, matches, currentStatus, onDataChange }: AdminPanelProps) {
+export default function AdminPanel({ tournamentId, matches, teams, numTables, currentStatus, onDataChange }: AdminPanelProps) {
   const [loading, setLoading] = useState<string | null>(null)
   const [statusLoading, setStatusLoading] = useState(false)
+  const [showAddMatch, setShowAddMatch] = useState(false)
+  const [addMatchTeam1, setAddMatchTeam1] = useState('')
+  const [addMatchTeam2, setAddMatchTeam2] = useState('')
+  const [addMatchTable, setAddMatchTable] = useState(1)
+  const [addMatchLoading, setAddMatchLoading] = useState(false)
 
-  const handleSetWinner = async (matchId: string, winnerId: string) => {
+  const handleSetWinner = async (matchId: string, winnerId: string, currentWinnerId: string | null) => {
     setLoading(matchId)
     try {
-      await updateMatchWinner(matchId, winnerId)
-      // Trigger refetch after successful update
+      if (winnerId === currentWinnerId) {
+        // Toggle: clicking the current winner clears the result
+        await clearMatchWinner(matchId)
+      } else {
+        await updateMatchWinner(matchId, winnerId)
+      }
       onDataChange?.()
     } catch (error) {
       console.error('Failed to update match:', error)
@@ -45,6 +51,25 @@ export default function AdminPanel({ tournamentId, matches, currentStatus, onDat
       console.error('Failed to update status:', error)
     } finally {
       setStatusLoading(false)
+    }
+  }
+
+  const handleAddMatch = async () => {
+    if (!addMatchTeam1 || !addMatchTeam2 || addMatchTeam1 === addMatchTeam2) return
+    setAddMatchLoading(true)
+    try {
+      const result = await addTiebreakerMatch(tournamentId, addMatchTeam1, addMatchTeam2, addMatchTable)
+      if (result.success) {
+        setShowAddMatch(false)
+        setAddMatchTeam1('')
+        setAddMatchTeam2('')
+        setAddMatchTable(1)
+        onDataChange?.()
+      }
+    } catch (error) {
+      console.error('Failed to add match:', error)
+    } finally {
+      setAddMatchLoading(false)
     }
   }
 
@@ -70,7 +95,15 @@ export default function AdminPanel({ tournamentId, matches, currentStatus, onDat
   return (
     <div className="bg-slate-800 rounded-lg shadow-lg p-6 border border-slate-700">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-slate-100">Admin Panel</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-bold text-slate-100">Admin Panel</h2>
+          <button
+            onClick={() => setShowAddMatch(true)}
+            className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            + Add Match
+          </button>
+        </div>
 
         <div className="hidden lg:flex gap-2">
           <button
@@ -139,7 +172,7 @@ export default function AdminPanel({ tournamentId, matches, currentStatus, onDat
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <button
-                      onClick={() => handleSetWinner(match.id, match.team1_id)}
+                      onClick={() => handleSetWinner(match.id, match.team1_id, match.winner_id)}
                       disabled={loading === match.id}
                       className={getTeamButtonStyles(match, match.team1_id)}
                     >
@@ -152,7 +185,7 @@ export default function AdminPanel({ tournamentId, matches, currentStatus, onDat
                     </button>
 
                     <button
-                      onClick={() => handleSetWinner(match.id, match.team2_id)}
+                      onClick={() => handleSetWinner(match.id, match.team2_id, match.winner_id)}
                       disabled={loading === match.id}
                       className={getTeamButtonStyles(match, match.team2_id)}
                     >
@@ -194,7 +227,7 @@ export default function AdminPanel({ tournamentId, matches, currentStatus, onDat
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <button
-                      onClick={() => handleSetWinner(match.id, match.team1_id)}
+                      onClick={() => handleSetWinner(match.id, match.team1_id, match.winner_id)}
                       disabled={loading === match.id}
                       className={getTeamButtonStyles(match, match.team1_id)}
                     >
@@ -212,7 +245,7 @@ export default function AdminPanel({ tournamentId, matches, currentStatus, onDat
                     </button>
 
                     <button
-                      onClick={() => handleSetWinner(match.id, match.team2_id)}
+                      onClick={() => handleSetWinner(match.id, match.team2_id, match.winner_id)}
                       disabled={loading === match.id}
                       className={getTeamButtonStyles(match, match.team2_id)}
                     >
@@ -235,6 +268,87 @@ export default function AdminPanel({ tournamentId, matches, currentStatus, onDat
           </div>
         )}
       </div>
+
+      {/* Add Match Modal */}
+      {showAddMatch && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4 border border-slate-600">
+            <h3 className="text-xl font-bold text-white mb-4">Add Match</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Team 1</label>
+                <select
+                  value={addMatchTeam1}
+                  onChange={(e) => setAddMatchTeam1(e.target.value)}
+                  title="Select Team 1"
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white"
+                >
+                  <option value="">Select team...</option>
+                  {teams.filter(t => t.id !== addMatchTeam2).map(team => (
+                    <option key={team.id} value={team.id}>
+                      {team.player1_name} & {team.player2_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Team 2</label>
+                <select
+                  value={addMatchTeam2}
+                  onChange={(e) => setAddMatchTeam2(e.target.value)}
+                  title="Select Team 2"
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white"
+                >
+                  <option value="">Select team...</option>
+                  {teams.filter(t => t.id !== addMatchTeam1).map(team => (
+                    <option key={team.id} value={team.id}>
+                      {team.player1_name} & {team.player2_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Table</label>
+                <div className="flex flex-wrap gap-2">
+                  {Array.from({ length: numTables }, (_, i) => i + 1).map((table) => (
+                    <button
+                      key={table}
+                      type="button"
+                      onClick={() => setAddMatchTable(table)}
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                        addMatchTable === table
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                    >
+                      Table {table}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowAddMatch(false)}
+                className="flex-1 px-4 py-2 bg-slate-700 text-slate-300 rounded-lg font-medium hover:bg-slate-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddMatch}
+                disabled={addMatchLoading || !addMatchTeam1 || !addMatchTeam2 || addMatchTeam1 === addMatchTeam2}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {addMatchLoading ? 'Creating...' : 'Create Match'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,14 +1,9 @@
 'use client'
 
-import { Database } from '@/lib/types/database'
 import { getStageDisplayName } from '@/lib/tournament/playoff-utils'
+import type { Team, MatchWithTeams } from '@/lib/db/types'
 
-type Team = Database['public']['Tables']['teams']['Row']
-type Match = Database['public']['Tables']['matches']['Row'] & {
-  team1: Team
-  team2: Team
-  winner: Team | null
-}
+type Match = MatchWithTeams
 
 interface PlayoffBracketViewProps {
   matches: Match[]

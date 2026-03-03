@@ -3,8 +3,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { Database } from '@/lib/types/database'
+import { useTournamentSSE } from '@/lib/hooks/useTournamentSSE'
+import { logoutAction } from '@/app/actions/auth'
+import type { Tournament, Team, MatchWithTeams } from '@/lib/db/types'
 import Leaderboard from './Leaderboard'
 import MatchSchedule from './MatchSchedule'
 import AdminPanel from './AdminPanel'
@@ -12,18 +13,10 @@ import TiebreakerPanel from './TiebreakerPanel'
 import PoolStageView from './PoolStageView'
 import PlayoffBracketView from './PlayoffBracketView'
 
-type Tournament = Database['public']['Tables']['tournaments']['Row']
-type Team = Database['public']['Tables']['teams']['Row']
-type Match = Database['public']['Tables']['matches']['Row'] & {
-  team1: Team
-  team2: Team
-  winner: Team | null
-}
-
 interface TournamentAdminViewProps {
   tournament: Tournament
   teams: Team[]
-  matches: Match[]
+  matches: MatchWithTeams[]
 }
 
 export default function TournamentAdminView({ tournament: initialTournament, teams: initialTeams, matches: initialMatches }: TournamentAdminViewProps) {
@@ -37,53 +30,15 @@ export default function TournamentAdminView({ tournament: initialTournament, tea
   const poolMatches = matches.filter(m => m.stage === 'pool')
   const playoffMatches = matches.filter(m => m.stage !== 'pool')
 
-  // Function to refetch all data
+  // Function to refetch all data via API
   const refetchData = useCallback(async () => {
-    const supabase = createClient()
-
-    // Refetch teams
-    const { data: teamsData } = await supabase
-      .from('teams')
-      .select('*')
-      .eq('tournament_id', tournament.id)
-      .order('points', { ascending: false })
-
-    if (teamsData) {
-      setTeams(teamsData)
-    }
-
-    // Refetch matches with team details
-    const { data: matchesData } = await supabase
-      .from('matches')
-      .select(`
-        *,
-        team1:team1_id(*),
-        team2:team2_id(*),
-        winner:winner_id(*)
-      `)
-      .eq('tournament_id', tournament.id)
-      .order('round_number', { ascending: true })
-      .order('table_number', { ascending: true })
-
-    if (matchesData) {
-      const formattedMatches = (matchesData as any[]).map((match) => ({
-        id: match.id,
-        tournament_id: match.tournament_id,
-        round_number: match.round_number,
-        table_number: match.table_number,
-        team1_id: match.team1_id,
-        team2_id: match.team2_id,
-        winner_id: match.winner_id,
-        completed_at: match.completed_at,
-        stage: match.stage,
-        bracket_position: match.bracket_position,
-        created_at: match.created_at,
-        team1: match.team1,
-        team2: match.team2,
-        winner: match.winner,
-      }))
-      setMatches(formattedMatches)
-    }
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
+    const response = await fetch(`${basePath}/api/tournament/${tournament.id}`)
+    if (!response.ok) return
+    const data = await response.json()
+    if (data.tournament) setTournament(data.tournament)
+    if (data.teams) setTeams(data.teams)
+    if (data.matches) setMatches(data.matches)
   }, [tournament.id])
 
   // Update state when props change (from server revalidation)
@@ -93,68 +48,11 @@ export default function TournamentAdminView({ tournament: initialTournament, tea
     setMatches(initialMatches)
   }, [initialTournament, initialTeams, initialMatches])
 
-  useEffect(() => {
-    const supabase = createClient()
-
-    // Subscribe to tournament changes
-    const tournamentChannel = supabase
-      .channel(`admin-tournament-${tournament.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tournaments',
-          filter: `id=eq.${tournament.id}`,
-        },
-        (payload) => {
-          if (payload.new) {
-            setTournament(payload.new as Tournament)
-          }
-        }
-      )
-      .subscribe()
-
-    // Subscribe to teams changes
-    const teamsChannel = supabase
-      .channel(`admin-teams-${tournament.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'teams',
-          filter: `tournament_id=eq.${tournament.id}`,
-        },
-        () => {
-          refetchData()
-        }
-      )
-      .subscribe()
-
-    // Subscribe to matches changes
-    const matchesChannel = supabase
-      .channel(`admin-matches-${tournament.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'matches',
-          filter: `tournament_id=eq.${tournament.id}`,
-        },
-        () => {
-          refetchData()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(tournamentChannel)
-      supabase.removeChannel(teamsChannel)
-      supabase.removeChannel(matchesChannel)
-    }
-  }, [tournament.id, refetchData])
+  // Subscribe to SSE for realtime updates
+  useTournamentSSE({
+    tournamentId: tournament.id,
+    onEvent: refetchData,
+  })
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -228,6 +126,14 @@ export default function TournamentAdminView({ tournament: initialTournament, tea
               </div>
             </div>
             <div className="flex gap-2">
+              {tournament.status === 'setup' && (
+                <Link
+                  href={`/tournament/${tournament.id}/edit`}
+                  className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+                >
+                  Edit Tournament
+                </Link>
+              )}
               <Link
                 href={`/tournament/${tournament.id}`}
                 target="_blank"
@@ -238,7 +144,7 @@ export default function TournamentAdminView({ tournament: initialTournament, tea
               <button
                 type="button"
                 onClick={() => {
-                  const url = `${window.location.origin}/tournament/${tournament.id}`
+                  const url = `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH || ''}/tournament/${tournament.id}`
                   const message = `Check Out This Tournament Tonight: ${tournament.venue_name}\n${url}`
                   window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank')
                 }}
@@ -248,6 +154,13 @@ export default function TournamentAdminView({ tournament: initialTournament, tea
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                 </svg>
                 Share
+              </button>
+              <button
+                type="button"
+                onClick={() => logoutAction()}
+                className="px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-red-800 transition-colors"
+              >
+                Logout
               </button>
             </div>
           </div>
@@ -260,6 +173,8 @@ export default function TournamentAdminView({ tournament: initialTournament, tea
           <AdminPanel
             tournamentId={tournament.id}
             matches={matches}
+            teams={teams}
+            numTables={tournament.num_tables}
             currentStatus={tournament.status}
             onDataChange={refetchData}
           />

@@ -1,13 +1,10 @@
-import { createClient } from '@/lib/supabase/server'
+import { getAllTournaments } from '@/lib/db/queries'
 import Link from 'next/link'
 
-export default async function TournamentsPage() {
-  const supabase = await createClient()
+export const dynamic = 'force-dynamic'
 
-  const { data: tournaments } = await supabase
-    .from('tournaments')
-    .select('*')
-    .order('tournament_date', { ascending: false })
+export default async function TournamentsPage() {
+  const tournaments = await getAllTournaments()
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -27,10 +24,10 @@ export default async function TournamentsPage() {
             <p className="text-slate-400 mt-2">Browse all pool tournaments</p>
           </div>
           <Link
-            href="/admin"
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            href="/login"
+            className="px-6 py-3 bg-slate-700 text-slate-300 border border-slate-600 rounded-lg font-semibold hover:bg-slate-600 transition-colors"
           >
-            Create New Tournament
+            Admin Login
           </Link>
         </div>
 
@@ -40,10 +37,10 @@ export default async function TournamentsPage() {
             <h2 className="text-2xl font-semibold text-white mb-2">No tournaments yet</h2>
             <p className="text-slate-400 mb-6">Create your first tournament to get started!</p>
             <Link
-              href="/admin"
+              href="/login"
               className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
             >
-              Create Tournament
+              Admin Login
             </Link>
           </div>
         ) : (

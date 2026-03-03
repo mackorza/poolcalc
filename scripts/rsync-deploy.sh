@@ -3,9 +3,9 @@
 #############################################
 # PoolCalc - Rsync Deployment Script
 # Server: srv1280063.hstgr.cloud (72.61.195.195)
-# URL: https://futronix.co.za/poolcalc
+# Domain: futronix.co.za
 # Port: 3006
-# Database: Supabase (cloud)
+# Database: PostgreSQL (Drizzle ORM)
 #############################################
 
 set -e
@@ -23,18 +23,17 @@ VPS_USER="root"
 SSH_KEY="~/.ssh/srv1280063.hstgr.cloud"
 VPS_APP_DIR="/var/www/futronix.co.za"
 DOMAIN="futronix.co.za"
-SUBPATH="/poolcalc"
 APP_PORT=3006
 PM2_NAME="poolcalc"
 
-# SSH command
+# SSH/SCP commands
 SSH_CMD="ssh -i ${SSH_KEY} ${VPS_USER}@${VPS_IP}"
 
 echo -e "${BLUE}=====================================${NC}"
 echo -e "${BLUE}PoolCalc - Rsync Deployment${NC}"
 echo -e "${BLUE}Server: srv1280063.hstgr.cloud${NC}"
 echo -e "${BLUE}IP: ${VPS_IP}${NC}"
-echo -e "${BLUE}URL: https://${DOMAIN}${SUBPATH}${NC}"
+echo -e "${BLUE}Domain: ${DOMAIN}${NC}"
 echo -e "${BLUE}Port: ${APP_PORT}${NC}"
 echo -e "${BLUE}=====================================${NC}"
 
@@ -57,6 +56,7 @@ echo -e "\n${YELLOW}[2/7] Bumping version...${NC}"
 CURRENT_VERSION=$(node -p "require('./package.json').version")
 echo -e "Current version: ${BLUE}v${CURRENT_VERSION}${NC}"
 
+# Parse and bump version (format: MAJOR.YYMM.PATCH)
 IFS='.' read -r -a VERSION_PARTS <<< "$CURRENT_VERSION"
 MAJOR="${VERSION_PARTS[0]}"
 CURRENT_YYMM="${VERSION_PARTS[1]}"
@@ -72,6 +72,12 @@ fi
 NEW_VERSION="${MAJOR}.${NEW_YYMM}.${NEW_PATCH}"
 npm version ${NEW_VERSION} --no-git-tag-version
 echo -e "New version: ${GREEN}v${NEW_VERSION}${NC}"
+
+# Update service worker cache version
+if [ -f public/sw.js ]; then
+    sed -i "s/const CACHE_VERSION = .*/const CACHE_VERSION = 'v${NEW_VERSION}';/" public/sw.js
+    echo -e "${GREEN}✓ Service worker cache version updated${NC}"
+fi
 echo -e "${GREEN}✓ Version bumped${NC}"
 
 # Step 3: Git commit and push
@@ -80,14 +86,13 @@ git add .
 git commit -m "$(cat <<EOF
 Release v${NEW_VERSION}
 
-Deploy to ${DOMAIN}${SUBPATH}
+Deploy to ${DOMAIN}
 
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 EOF
-)" || echo -e "${YELLOW}No changes to commit${NC}"
-git push origin main 2>/dev/null && echo -e "${GREEN}✓ Pushed to GitHub${NC}" || echo -e "${YELLOW}⚠ Git push failed, continuing deploy...${NC}"
+)"
+git push origin main 2>/dev/null && echo -e "${GREEN}✓ Pushed to GitHub${NC}" || echo -e "${YELLOW}⚠ Git push failed (remote may need updating), continuing deploy...${NC}"
 
-# Step 4: Rsync to VPS (NEVER deletes uploads)
+# Step 4: Rsync to VPS
 echo -e "\n${YELLOW}[4/7] Syncing files to VPS...${NC}"
 rsync -avz \
     --exclude 'node_modules' \
@@ -95,19 +100,17 @@ rsync -avz \
     --exclude '.next' \
     --exclude '.env' \
     --exclude '.env.local' \
-    --exclude '.claude' \
-    --exclude 'public/uploads' \
     --exclude 'uploads' \
-    --exclude 'backups' \
-    --exclude 'public-root' \
+    --exclude 'public/uploads' \
+    --exclude 'drizzle/meta' \
     -e "ssh -i ~/.ssh/srv1280063.hstgr.cloud" \
     ./ ${VPS_USER}@${VPS_IP}:${VPS_APP_DIR}/
-echo -e "${GREEN}✓ Files synced (uploads preserved)${NC}"
+echo -e "${GREEN}✓ Files synced${NC}"
 
-# Step 5: Install dependencies
-echo -e "\n${YELLOW}[5/7] Installing dependencies...${NC}"
-${SSH_CMD} "cd ${VPS_APP_DIR} && npm install"
-echo -e "${GREEN}✓ Dependencies installed${NC}"
+# Step 5: Install dependencies and push schema
+echo -e "\n${YELLOW}[5/7] Installing dependencies and pushing schema...${NC}"
+${SSH_CMD} "cd ${VPS_APP_DIR} && npm install && source .env.local 2>/dev/null; DATABASE_URL=\${DATABASE_URL} npx drizzle-kit push --force"
+echo -e "${GREEN}✓ Dependencies installed & schema pushed${NC}"
 
 # Step 6: Build
 echo -e "\n${YELLOW}[6/7] Building application...${NC}"
@@ -116,12 +119,14 @@ echo -e "${GREEN}✓ Build complete${NC}"
 
 # Step 7: Restart PM2
 echo -e "\n${YELLOW}[7/7] Restarting PM2...${NC}"
+
+# Check if PM2 process exists, if not create it
 PM2_EXISTS=$(${SSH_CMD} "pm2 describe ${PM2_NAME} 2>/dev/null" && echo "yes" || echo "no")
 if [ "$PM2_EXISTS" == "no" ]; then
     echo -e "${YELLOW}Creating new PM2 process...${NC}"
     ${SSH_CMD} "cd ${VPS_APP_DIR} && PORT=${APP_PORT} pm2 start npm --name ${PM2_NAME} -- start"
 else
-    ${SSH_CMD} "cd ${VPS_APP_DIR} && PORT=${APP_PORT} pm2 restart ${PM2_NAME} --update-env"
+    ${SSH_CMD} "cd ${VPS_APP_DIR} && PORT=${APP_PORT} pm2 restart ${PM2_NAME}"
 fi
 ${SSH_CMD} "pm2 save"
 echo -e "${GREEN}✓ PM2 restarted${NC}"
@@ -129,20 +134,21 @@ echo -e "${GREEN}✓ PM2 restarted${NC}"
 # Health check
 echo -e "\n${YELLOW}Running health check...${NC}"
 sleep 5
-HEALTH=$(${SSH_CMD} "curl -s -o /dev/null -w '%{http_code}' http://localhost:${APP_PORT}${SUBPATH}" 2>/dev/null || echo "failed")
-if [[ "$HEALTH" == "200" ]]; then
-    echo -e "${GREEN}✓ Health check passed (HTTP 200)${NC}"
+HEALTH=$(${SSH_CMD} "curl -s http://localhost:${APP_PORT}" 2>/dev/null || echo "failed")
+if [[ "$HEALTH" == *"html"* ]] || [[ "$HEALTH" == *"<!DOCTYPE"* ]]; then
+    echo -e "${GREEN}✓ Health check passed${NC}"
 else
-    echo -e "${YELLOW}⚠ Health check: HTTP ${HEALTH}${NC}"
+    echo -e "${YELLOW}⚠ Health: ${HEALTH}${NC}"
     echo -e "${YELLOW}  Check logs: ${SSH_CMD} 'pm2 logs ${PM2_NAME} --lines 50'${NC}"
 fi
 
 echo -e "\n${GREEN}=====================================${NC}"
-echo -e "${GREEN}✓ PoolCalc Deployment Complete!${NC}"
+echo -e "${GREEN}✓ Deployment Complete!${NC}"
 echo -e "${GREEN}=====================================${NC}"
 echo -e "Version: ${GREEN}v${NEW_VERSION}${NC}"
-echo -e "URL: ${BLUE}https://${DOMAIN}${SUBPATH}${NC}"
+echo -e "URL: ${BLUE}https://${DOMAIN}${NC}"
 echo -e "\nCommands:"
 echo -e "  Logs:    ${SSH_CMD} 'pm2 logs ${PM2_NAME}'"
 echo -e "  Status:  ${SSH_CMD} 'pm2 status'"
 echo -e "  Restart: ${SSH_CMD} 'pm2 restart ${PM2_NAME}'"
+echo -e "  DB:      ${SSH_CMD} 'cd ${VPS_APP_DIR} && npx drizzle-kit studio'"

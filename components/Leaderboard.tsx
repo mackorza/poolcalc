@@ -1,8 +1,6 @@
 'use client'
 
-import { Database } from '@/lib/types/database'
-
-type Team = Database['public']['Tables']['teams']['Row']
+import type { Team } from '@/lib/db/types'
 
 interface LeaderboardProps {
   teams: Team[]

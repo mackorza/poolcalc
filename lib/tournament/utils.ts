@@ -153,8 +153,11 @@ export function getRecommendedRounds(numPlayers: number, numTables: number): {
   const numTeams = Math.floor(numPlayers / 2)
   const totalMatches = calculateTotalMatches(numTeams)
 
-  // Calculate rounds needed to complete all matches with given tables
-  const roundsNeeded = Math.ceil(totalMatches / numTables)
+  // Generate the actual schedule to get the true round count
+  // This accounts for bye rounds with odd team counts
+  const dummyIds = Array.from({ length: numTeams }, (_, i) => `t${i}`)
+  const schedule = generateRoundRobinSchedule(dummyIds, numTables)
+  const roundsNeeded = schedule.length
 
   // Recommended: Full round-robin (all teams play each other once)
   const recommended = roundsNeeded
@@ -166,8 +169,7 @@ export function getRecommendedRounds(numPlayers: number, numTables: number): {
   const max = roundsNeeded
 
   let explanation = `With ${numTeams} teams and ${numTables} table${numTables > 1 ? 's' : ''}: `
-  explanation += `${totalMatches} total matches across ${roundsNeeded} rounds. `
-  explanation += `Each round uses all ${numTables} table${numTables > 1 ? 's' : ''}.`
+  explanation += `${totalMatches} total matches across ${roundsNeeded} rounds.`
 
   return {
     recommended,

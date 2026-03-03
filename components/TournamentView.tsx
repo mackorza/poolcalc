@@ -1,26 +1,18 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { Database } from '@/lib/types/database'
+import { useTournamentSSE } from '@/lib/hooks/useTournamentSSE'
+import type { Tournament, Team, MatchWithTeams } from '@/lib/db/types'
 import Leaderboard from './Leaderboard'
 import MatchSchedule from './MatchSchedule'
 import PoolStageView from './PoolStageView'
 import PlayoffBracketView from './PlayoffBracketView'
 import confetti from 'canvas-confetti'
 
-type Tournament = Database['public']['Tables']['tournaments']['Row']
-type Team = Database['public']['Tables']['teams']['Row']
-type Match = Database['public']['Tables']['matches']['Row'] & {
-  team1: Team
-  team2: Team
-  winner: Team | null
-}
-
 interface TournamentViewProps {
   tournament: Tournament
   teams: Team[]
-  matches: Match[]
+  matches: MatchWithTeams[]
 }
 
 export default function TournamentView({ tournament: initialTournament, teams: initialTeams, matches: initialMatches }: TournamentViewProps) {
@@ -110,53 +102,15 @@ export default function TournamentView({ tournament: initialTournament, teams: i
     }
   }, [winner])
 
-  // Function to refetch all data
+  // Function to refetch all data via API
   const refetchData = useCallback(async () => {
-    const supabase = createClient()
-
-    // Refetch teams
-    const { data: teamsData } = await supabase
-      .from('teams')
-      .select('*')
-      .eq('tournament_id', tournament.id)
-      .order('points', { ascending: false })
-
-    if (teamsData) {
-      setTeams(teamsData)
-    }
-
-    // Refetch matches with team details
-    const { data: matchesData } = await supabase
-      .from('matches')
-      .select(`
-        *,
-        team1:team1_id(*),
-        team2:team2_id(*),
-        winner:winner_id(*)
-      `)
-      .eq('tournament_id', tournament.id)
-      .order('round_number', { ascending: true })
-      .order('table_number', { ascending: true })
-
-    if (matchesData) {
-      const formattedMatches = (matchesData as any[]).map((match) => ({
-        id: match.id,
-        tournament_id: match.tournament_id,
-        round_number: match.round_number,
-        table_number: match.table_number,
-        team1_id: match.team1_id,
-        team2_id: match.team2_id,
-        winner_id: match.winner_id,
-        completed_at: match.completed_at,
-        stage: match.stage,
-        bracket_position: match.bracket_position,
-        created_at: match.created_at,
-        team1: match.team1,
-        team2: match.team2,
-        winner: match.winner,
-      }))
-      setMatches(formattedMatches)
-    }
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
+    const response = await fetch(`${basePath}/api/tournament/${tournament.id}`)
+    if (!response.ok) return
+    const data = await response.json()
+    if (data.tournament) setTournament(data.tournament)
+    if (data.teams) setTeams(data.teams)
+    if (data.matches) setMatches(data.matches)
   }, [tournament.id])
 
   // Update state when props change (from server revalidation)
@@ -166,68 +120,11 @@ export default function TournamentView({ tournament: initialTournament, teams: i
     setMatches(initialMatches)
   }, [initialTournament, initialTeams, initialMatches])
 
-  useEffect(() => {
-    const supabase = createClient()
-
-    // Subscribe to tournament changes
-    const tournamentChannel = supabase
-      .channel(`public-tournament-${tournament.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tournaments',
-          filter: `id=eq.${tournament.id}`,
-        },
-        (payload) => {
-          if (payload.new) {
-            setTournament(payload.new as Tournament)
-          }
-        }
-      )
-      .subscribe()
-
-    // Subscribe to teams changes
-    const teamsChannel = supabase
-      .channel(`public-teams-${tournament.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'teams',
-          filter: `tournament_id=eq.${tournament.id}`,
-        },
-        () => {
-          refetchData()
-        }
-      )
-      .subscribe()
-
-    // Subscribe to matches changes
-    const matchesChannel = supabase
-      .channel(`public-matches-${tournament.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'matches',
-          filter: `tournament_id=eq.${tournament.id}`,
-        },
-        () => {
-          refetchData()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(tournamentChannel)
-      supabase.removeChannel(teamsChannel)
-      supabase.removeChannel(matchesChannel)
-    }
-  }, [tournament.id, refetchData])
+  // Subscribe to SSE for realtime updates
+  useTournamentSSE({
+    tournamentId: tournament.id,
+    onEvent: refetchData,
+  })
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
