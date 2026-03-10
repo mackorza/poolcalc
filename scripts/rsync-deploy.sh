@@ -64,9 +64,10 @@ PATCH="${VERSION_PARTS[2]}"
 NEW_YYMM=$(date +"%y%m")
 
 if [ "$CURRENT_YYMM" == "$NEW_YYMM" ]; then
-    NEW_PATCH=$((PATCH + 1))
+    NEW_PATCH=$((10#${PATCH} + 1))
+    NEW_PATCH=$(printf "%02d" $NEW_PATCH)
 else
-    NEW_PATCH=1
+    NEW_PATCH="01"
 fi
 
 NEW_VERSION="${MAJOR}.${NEW_YYMM}.${NEW_PATCH}"
