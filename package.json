@@ -1,6 +1,6 @@
 {
   "name": "poolcalc",
-  "version": "0.2602.3",
+  "version": "0.2603.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
