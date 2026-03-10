@@ -80,17 +80,22 @@ if [ -f public/sw.js ]; then
 fi
 echo -e "${GREEN}✓ Version bumped${NC}"
 
-# Step 3: Git commit and push
-echo -e "\n${YELLOW}[3/7] Committing and pushing...${NC}"
+# Step 3: Git commit, tag, and push
+echo -e "\n${YELLOW}[3/7] Committing, tagging, and pushing...${NC}"
 git add .
 git commit -m "$(cat <<EOF
 Release v${NEW_VERSION}
 
 Deploy to ${DOMAIN}
-
 EOF
-)"
-git push origin main 2>/dev/null && echo -e "${GREEN}✓ Pushed to GitHub${NC}" || echo -e "${YELLOW}⚠ Git push failed (remote may need updating), continuing deploy...${NC}"
+)" || echo -e "${YELLOW}No changes to commit${NC}"
+git tag -a "v${NEW_VERSION}" -m "Release v${NEW_VERSION}"
+echo -e "${GREEN}✓ Tagged v${NEW_VERSION}${NC}"
+if ! git push origin main --tags; then
+    echo -e "${RED}Error: Git push failed. Resolve divergent branches before deploying.${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✓ Pushed to GitHub with tags${NC}"
 
 # Step 4: Rsync to VPS
 echo -e "\n${YELLOW}[4/7] Syncing files to VPS...${NC}"
@@ -100,12 +105,16 @@ rsync -avz \
     --exclude '.next' \
     --exclude '.env' \
     --exclude '.env.local' \
+    --exclude '.env.production' \
+    --exclude '.claude' \
     --exclude 'uploads' \
     --exclude 'public/uploads' \
+    --exclude 'documents' \
+    --exclude 'backups' \
     --exclude 'drizzle/meta' \
     -e "ssh -i ~/.ssh/srv1280063.hstgr.cloud" \
     ./ ${VPS_USER}@${VPS_IP}:${VPS_APP_DIR}/
-echo -e "${GREEN}✓ Files synced${NC}"
+echo -e "${GREEN}✓ Files synced (uploads/documents preserved)${NC}"
 
 # Step 5: Install dependencies and push schema
 echo -e "\n${YELLOW}[5/7] Installing dependencies and pushing schema...${NC}"
