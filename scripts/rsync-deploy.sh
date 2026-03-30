@@ -71,7 +71,7 @@ else
 fi
 
 NEW_VERSION="${MAJOR}.${NEW_YYMM}.${NEW_PATCH}"
-npm version ${NEW_VERSION} --no-git-tag-version
+sed -i "s/\"version\": \".*\"/\"version\": \"${NEW_VERSION}\"/" package.json
 echo -e "New version: ${GREEN}v${NEW_VERSION}${NC}"
 
 # Update service worker cache version
