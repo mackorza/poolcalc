@@ -56,6 +56,7 @@ function LoginForm() {
               className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder:text-slate-500"
               placeholder="admin@example.com"
               autoComplete="email"
+              title="Email address for admin login"
             />
           </div>
 
@@ -71,6 +72,7 @@ function LoginForm() {
               className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder:text-slate-500"
               placeholder="Enter password"
               autoComplete="current-password"
+              title="Password for admin login"
             />
           </div>
 
@@ -86,6 +88,7 @@ function LoginForm() {
               className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder:text-slate-500 tracking-widest"
               placeholder="XXXX-XXXX"
               autoComplete="off"
+              title="Security PIN for admin login"
             />
           </div>
 

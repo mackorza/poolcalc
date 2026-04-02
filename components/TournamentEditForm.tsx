@@ -160,6 +160,7 @@ export default function TournamentEditForm({ tournament, existingPlayers }: Tour
                   value={venueName}
                   onChange={(e) => setVenueName(e.target.value)}
                   className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder:text-slate-500"
+                  title="Name of the tournament venue"
                 />
               </div>
 
@@ -172,6 +173,7 @@ export default function TournamentEditForm({ tournament, existingPlayers }: Tour
                   value={venueLocation}
                   onChange={(e) => setVenueLocation(e.target.value)}
                   className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder:text-slate-500"
+                  title="Address or location of the venue"
                 />
               </div>
 
@@ -186,6 +188,7 @@ export default function TournamentEditForm({ tournament, existingPlayers }: Tour
                     value={tournamentDate}
                     onChange={(e) => setTournamentDate(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white [color-scheme:dark]"
+                    title="Date of the tournament"
                   />
                 </div>
 
@@ -198,6 +201,7 @@ export default function TournamentEditForm({ tournament, existingPlayers }: Tour
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white [color-scheme:dark]"
+                    title="Start time of the tournament"
                   />
                 </div>
               </div>
@@ -288,6 +292,7 @@ export default function TournamentEditForm({ tournament, existingPlayers }: Tour
                     value={numTables}
                     onChange={(e) => setNumTables(parseInt(e.target.value))}
                     className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
+                    title="Number of pool tables available"
                   />
                 </div>
 
@@ -303,6 +308,7 @@ export default function TournamentEditForm({ tournament, existingPlayers }: Tour
                       value={numRounds}
                       onChange={(e) => setNumRounds(parseInt(e.target.value))}
                       className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
+                      title="Number of rounds in the tournament"
                     />
                     {recommendation && (
                       <div className="mt-2">
@@ -355,6 +361,7 @@ export default function TournamentEditForm({ tournament, existingPlayers }: Tour
                   }}
                   className="flex-1 px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder:text-slate-500"
                   placeholder="Enter player name"
+                  title="Enter a player name to add to the tournament"
                 />
                 <button
                   type="button"
@@ -398,6 +405,7 @@ export default function TournamentEditForm({ tournament, existingPlayers }: Tour
                               }}
                               autoFocus
                               className="w-24 bg-transparent text-sm text-white outline-none"
+                              title="Edit player name"
                             />
                             <button
                               type="button"

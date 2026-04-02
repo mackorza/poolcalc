@@ -110,6 +110,7 @@ export default function CreateTournamentForm() {
                   onChange={(e) => setVenueName(e.target.value)}
                   className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder:text-slate-500"
                   placeholder="e.g., Downtown Pool Hall"
+                  title="Name of the tournament venue"
                 />
               </div>
 
@@ -123,6 +124,7 @@ export default function CreateTournamentForm() {
                   onChange={(e) => setVenueLocation(e.target.value)}
                   className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder:text-slate-500"
                   placeholder="e.g., 123 Main St, City"
+                  title="Address or location of the venue"
                 />
               </div>
 
@@ -137,6 +139,7 @@ export default function CreateTournamentForm() {
                     value={tournamentDate}
                     onChange={(e) => setTournamentDate(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white [color-scheme:dark]"
+                    title="Date of the tournament"
                   />
                 </div>
 
@@ -149,6 +152,7 @@ export default function CreateTournamentForm() {
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white [color-scheme:dark]"
+                    title="Start time of the tournament"
                   />
                 </div>
               </div>
@@ -240,6 +244,7 @@ export default function CreateTournamentForm() {
                     value={numTables}
                     onChange={(e) => setNumTables(parseInt(e.target.value))}
                     className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
+                    title="Number of pool tables available"
                   />
                 </div>
 
@@ -255,6 +260,7 @@ export default function CreateTournamentForm() {
                       value={numRounds}
                       onChange={(e) => setNumRounds(parseInt(e.target.value))}
                       className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
+                      title="Number of rounds in the tournament"
                     />
                     {recommendation && (
                       <div className="mt-2">
@@ -310,6 +316,7 @@ export default function CreateTournamentForm() {
                   }}
                   className="flex-1 px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white placeholder:text-slate-500"
                   placeholder="Enter player name"
+                  title="Enter a player name to add to the tournament"
                 />
                 <button
                   type="button"
