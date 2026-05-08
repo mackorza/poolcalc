@@ -108,10 +108,10 @@ rsync -avz \
     --exclude '.env.local' \
     --exclude '.env.production' \
     --exclude '.claude' \
-    --exclude 'uploads' \
+    --exclude '/uploads' \
     --exclude 'public/uploads' \
-    --exclude 'documents' \
-    --exclude 'backups' \
+    --exclude '/documents' \
+    --exclude '/backups' \
     --exclude 'drizzle/meta' \
     -e "ssh -i ~/.ssh/srv1280063.hstgr.cloud" \
     ./ ${VPS_USER}@${VPS_IP}:${VPS_APP_DIR}/
