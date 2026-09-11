@@ -19,7 +19,7 @@ NC='\033[0m'
 
 # Configuration
 VPS_IP="72.61.195.195"
-VPS_USER="root"
+VPS_USER="appsvc"
 SSH_KEY="~/.ssh/srv1280063.hstgr.cloud"
 VPS_APP_DIR="/var/www/futronix.co.za"
 DOMAIN="futronix.co.za"
